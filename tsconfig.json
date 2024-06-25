@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",                          // The JavaScript version to target.
+    "module": "ESNext",                          // Use ECMAScript modules.
+    "moduleResolution": "node",                  // Resolve modules using Node.js resolution strategy.
+    "outDir": "./dist",                          // Directory to output compiled files.
+    "rootDir": "./src",                          // Root directory of input files.
+    "esModuleInterop": true,                     // Enable compatibility for CommonJS modules.
+    "forceConsistentCasingInFileNames": true,    // Ensure consistent casing in module imports.
+    "strict": true,                              // Enable all strict type-checking options.
+    "skipLibCheck": true                         // Skip type checking of declaration files.
+  },
+  "include": ["src/**/*.ts"],                     // Include all TypeScript files in the src directory.
+  "exclude": ["node_modules"]                     // Exclude the node_modules directory.
+}

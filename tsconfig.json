@@ -8,8 +8,17 @@
     "esModuleInterop": true,                     // Enable compatibility for CommonJS modules.
     "forceConsistentCasingInFileNames": true,    // Ensure consistent casing in module imports.
     "strict": true,                              // Enable all strict type-checking options.
-    "skipLibCheck": true                         // Skip type checking of declaration files.
+    "skipLibCheck": true,
+    // "allowJs": true,
+    "declaration": true,
+    // "emitDeclarationOnly": true,
+    // "declarationMap": true
+    "declarationDir": "./dist/types"
   },
-  "include": ["src/**/*.ts"],                     // Include all TypeScript files in the src directory.
+  "include": [
+    "src/**/*.ts",
+    "dist/**/*.d.ts",
+    "index-types.d.ts" // Add index-types.d.ts to include all types
+  ], 
   "exclude": ["node_modules"]                     // Exclude the node_modules directory.
 }

@@ -20,5 +20,8 @@
     "dist/**/*.d.ts",
     "index-types.d.ts" // Add index-types.d.ts to include all types
   ], 
-  "exclude": ["node_modules"]                     // Exclude the node_modules directory.
+  "exclude": [
+    "node_modules",
+   "./dist/**/*"
+   ]                     // Exclude the node_modules directory.
 }

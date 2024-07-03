@@ -147,10 +147,10 @@ export default class BinanceStreams extends BinanceBase {
     closeAllSockets(): void;
     handleWebSocket(webSocket: ws, parser: Function, callback: Function, reconnect: Function, title: string): Promise<void>;
     spotDepthStream(symbols: string[], callback: (data: DepthData) => void): Promise<void>;
+    futuresDepthStream(symbols: string[], callback: (data: DepthData) => void): Promise<void>;
     spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void): Promise<void>;
     futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void): Promise<void>;
     futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void): Promise<void>;
     spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void): Promise<void>;
-    spotUserDataStream(symbols: string[], callback: (data: BookTickerData) => void): Promise<void>;
     futuresUserDataStream(callback: (data: UserData) => void): Promise<void>;
 }

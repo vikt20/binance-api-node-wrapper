@@ -52,6 +52,13 @@ export default class BinanceStreams extends BinanceBase {
         const reconnect = () => this.spotDepthStream(symbols, callback);
         return this.handleWebSocket(webSocket, convertDepthData, callback, reconnect, 'spotDepthStream()');
     }
+    //subscribe to futures depth stream
+    futuresDepthStream(symbols, callback) {
+        const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
+        const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
+        const reconnect = () => this.futuresDepthStream(symbols, callback);
+        return this.handleWebSocket(webSocket, convertDepthData, callback, reconnect, 'futuresDepthStream()');
+    }
     spotCandleStickStream(symbols, interval, callback) {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@kline_${interval}`);
         const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
@@ -75,12 +82,6 @@ export default class BinanceStreams extends BinanceBase {
         const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
         const reconnect = () => this.spotBookTickerStream(symbols, callback);
         return this.handleWebSocket(webSocket, convertBookTickerData, callback, reconnect, 'spotBookTicketStream()');
-    }
-    spotUserDataStream(symbols, callback) {
-        const streams = symbols.map(symbol => `${symbol.toLowerCase()}@bookTicker`);
-        const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
-        const reconnect = () => this.futuresBookTickerStream(symbols, callback);
-        return this.handleWebSocket(webSocket, convertBookTickerData, callback, reconnect, 'futuresBookTicketStream()');
     }
     async futuresUserDataStream(callback) {
         const listenKey = await this.getFuturesListenKey();

@@ -1,5 +1,5 @@
-import BinanceStreams from './BinanceStreams.js';
-import { convertPositionDataByRequest, convertOrderDataRequestResponse, extractInfo } from './converters.js';
+import BinanceStreams, { KlineData } from './BinanceStreams.js';
+import { convertPositionDataByRequest, convertOrderDataRequestResponse, extractInfo, convertKlinesDataByRequest } from './converters.js';
 
 import {
     FormattedResponse, ListenKey, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderSide, OrderType, TimeInForce, OrderWorkingType, OrderStatus, PositionDirection, PositionSide, GetOpenOrdersBySymbolParams,
@@ -10,7 +10,8 @@ import {
     LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams,
     StopLimitOrderParams,
     ReducePositionParams,
-    ExtractedInfo
+    ExtractedInfo,
+    ExchangeInfo
 } from './BinanceBase.js';
 
 type OrderInput = {
@@ -76,6 +77,21 @@ export type PositionDataByRequest = {
     adlQuantile: number;
 };
 
+export type KlineDataByRequest = [
+    number, //Open time
+    string, //Open
+    string, //High
+    string, //Low
+    string, //Close
+    string, //Volume
+    number, //Close time
+    string, //Quote asset volume
+    number, //Number of trades
+    string, //Taker buy base asset volume
+    string, //Taker buy quote asset volume
+    string //Ignore
+]
+
 export default class BinanceFutures extends BinanceStreams {
     constructor(apiKey?: string, apiSecret?: string) {
         super(apiKey, apiSecret);
@@ -86,17 +102,22 @@ export default class BinanceFutures extends BinanceStreams {
         return await this.signedRequest('futures', 'DELETE', '/fapi/v1/listenKey');
     }
 
-    async getExchangeInfo(): Promise<FormattedResponse<{ [key: string]: ExtractedInfo }>> {
+    async getExchangeInfo(): Promise<FormattedResponse<ExchangeInfo>> {
         let request = await this.publicRequest('futures', 'GET', '/fapi/v1/exchangeInfo')
         // return this.formattedResponse({ data: this.extractInfo(request.data) });
         if (request.success) {
-            return this.formattedResponse({ data: extractInfo(request.data.symbols) });
+            return this.formattedResponse({ data: request.data });
         } else {
             return this.formattedResponse({ errors: request.errors });
         }
     }
     async getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>> {
         return await this.publicRequest('futures', 'GET', '/fapi/v1/depth', { symbol: params.symbol, limit: params.limit ? params.limit : 500 });
+    }
+    async getKlines(params: { symbol: string, interval: string, startTime?: number, endTime?: number, limit?: number }): Promise<FormattedResponse<KlineDataByRequest[]>> {
+        const request = await this.publicRequest('futures', 'GET', '/fapi/v1/klines', { symbol: params.symbol, interval: params.interval, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
+        if (request.errors) return this.formattedResponse({ errors: request.errors });
+        return this.formattedResponse({ data: request.data });
     }
     async getPositionRisk(): Promise<FormattedResponse<any>> {
         return await this.signedRequest('futures', 'GET', '/fapi/v2/positionRisk');

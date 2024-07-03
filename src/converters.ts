@@ -1,6 +1,6 @@
 import { ExchangeInfo, ExtractedInfo, AccountData, OrderData, OrderRequestResponse, PositionData, PositionDirection } from './BinanceBase.js';
 import { DepthData, KlineData, UserData, DepthDataWebSocket, KlineDataWebSocket, UserDataWebSocket, AccountDataWebSocket, OrderDataWebSocket, BookTickerDataWebSocket, BookTickerData } from './BinanceStreams.js';
-import { PositionDataByRequest } from './BinanceFutures.js';
+import { KlinesDataByRequest, PositionDataByRequest } from './BinanceFutures.js';
 
 export function convertObjectIntoUrlEncoded(obj: any) {
     return Object.keys(obj).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k])).join('&');
@@ -234,4 +234,17 @@ export function convertPositionDataByRequest(rawPositionData: PositionDataByRequ
 export function convertBookTickerData(rawData: BookTickerDataWebSocket): BookTickerData {
     let { s: symbol, b: bestBid, B: bestBidQty, a: bestAsk, A: bestAskQty } = rawData.data;
     return { symbol, bestBid: parseFloat(bestBid), bestBidQty: parseFloat(bestBidQty), bestAsk: parseFloat(bestAsk), bestAskQty: parseFloat(bestAskQty) };
+}
+
+export function convertKlinesDataByRequest(rawData: KlinesDataByRequest, symbol: string): KlineData[] {
+    return rawData.map(data => ({
+        symbol, // Replace with actual symbol value
+        time: data[0],
+        open: parseFloat(data[1]),
+        high: parseFloat(data[2]),
+        low: parseFloat(data[3]),
+        close: parseFloat(data[4]),
+        volume: parseFloat(data[5]),
+        trades: data[8] // Assuming number of trades is at index 8
+    }));
 }

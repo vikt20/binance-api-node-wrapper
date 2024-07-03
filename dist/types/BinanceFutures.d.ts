@@ -1,5 +1,5 @@
 import BinanceStreams from './BinanceStreams.js';
-import { FormattedResponse, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderSide, OrderType, TimeInForce, OrderWorkingType, OrderStatus, PositionSide, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, StopLimitOrderParams, ReducePositionParams, ExtractedInfo } from './BinanceBase.js';
+import { FormattedResponse, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderSide, OrderType, TimeInForce, OrderWorkingType, OrderStatus, PositionSide, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, StopLimitOrderParams, ReducePositionParams, ExchangeInfo } from './BinanceBase.js';
 type OrderInput = {
     symbol: string;
     side: OrderSide;
@@ -60,13 +60,32 @@ export type PositionDataByRequest = {
     isolated: boolean;
     adlQuantile: number;
 };
+export type KlineDataByRequest = [
+    number,
+    string,
+    string,
+    string,
+    string,
+    string,
+    number,
+    string,
+    number,
+    string,
+    string,
+    string
+];
 export default class BinanceFutures extends BinanceStreams {
     constructor(apiKey?: string, apiSecret?: string);
     closeListenKey(): Promise<FormattedResponse<any>>;
-    getExchangeInfo(): Promise<FormattedResponse<{
-        [key: string]: ExtractedInfo;
-    }>>;
+    getExchangeInfo(): Promise<FormattedResponse<ExchangeInfo>>;
     getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>>;
+    getKlines(params: {
+        symbol: string;
+        interval: string;
+        startTime?: number;
+        endTime?: number;
+        limit?: number;
+    }): Promise<FormattedResponse<KlineDataByRequest[]>>;
     getPositionRisk(): Promise<FormattedResponse<any>>;
     getOpenPositions(): Promise<FormattedResponse<AccountData['positions']>>;
     getOpenPositionBySymbol(params: {

@@ -114,10 +114,13 @@ export default class BinanceFutures extends BinanceStreams {
     async getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>> {
         return await this.publicRequest('futures', 'GET', '/fapi/v1/depth', { symbol: params.symbol, limit: params.limit ? params.limit : 500 });
     }
-    async getKlines(params: { symbol: string, interval: string, startTime?: number, endTime?: number, limit?: number }): Promise<FormattedResponse<KlineDataByRequest[]>> {
+    async getKlines(params: { symbol: string, interval: string, startTime?: number, endTime?: number, limit?: number }): Promise<FormattedResponse<KlineData[]>> {
         const request = await this.publicRequest('futures', 'GET', '/fapi/v1/klines', { symbol: params.symbol, interval: params.interval, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
         if (request.errors) return this.formattedResponse({ errors: request.errors });
-        return this.formattedResponse({ data: request.data });
+        return this.formattedResponse({ data: convertKlinesDataByRequest(request.data, params.symbol) });
+    }
+    async getBalance(): Promise<FormattedResponse<AccountData['balances']>> {
+        return await this.signedRequest('futures', 'GET', '/fapi/v2/balance');
     }
     async getPositionRisk(): Promise<FormattedResponse<any>> {
         return await this.signedRequest('futures', 'GET', '/fapi/v2/positionRisk');
@@ -140,7 +143,7 @@ export default class BinanceFutures extends BinanceStreams {
     }
     async getOpenPositionBySymbol(params: { symbol: string }): Promise<FormattedResponse<PositionData>> {
         let request = await this.getOpenPositions();
-        if (request.errors) return this.formattedResponse({ errors: request.errors });
+        if (request.errors || !request.data) return this.formattedResponse({ errors: request.errors });
         let position = request.data.find(p => p.symbol === params.symbol);
         if (typeof position === 'undefined') return this.formattedResponse({ errors: 'Position not found' });
         return this.formattedResponse({ data: position });

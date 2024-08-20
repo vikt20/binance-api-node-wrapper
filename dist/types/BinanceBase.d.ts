@@ -33,7 +33,8 @@ export type ExchangeInfo = {
             minQty: string;
             maxQty: string;
             stepSize: string;
-            minNotional: string;
+            minNotional?: string;
+            notional: number;
             applyToMarket: boolean;
             avgPriceMins: number;
             limit: number;
@@ -52,6 +53,8 @@ export type ExtractedInfo = {
     minNotional: number;
     orderTypes: Array<'LIMIT' | 'LIMIT_MAKER' | 'MARKET' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT_LIMIT'>;
     icebergAllowed: boolean;
+    baseAsset: string;
+    quoteAsset: string;
 };
 export type Type = 'futures' | 'spot';
 export type OrderType = 'LIMIT' | 'MARKET' | 'STOP' | 'TAKE_PROFIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET' | 'LIMIT_MAKER' | 'TRAILING_STOP_MARKET';
@@ -203,7 +206,6 @@ export default class BinanceBase {
     private _HTTP_AGENT;
     private _HTTPS_AGENT;
     private _AXIOS_INSTANCE;
-    private checkInternetConnectionInterval;
     private pingServerInterval;
     static FUTURES_STREAM_URL: string;
     static SPOT_STREAM_URL: string;
@@ -217,6 +219,8 @@ export default class BinanceBase {
     private pingServer;
     private generateSignature;
     getFuturesListenKey(): Promise<FormattedResponse<ListenKey>>;
+    setTimeOffset(): Promise<void>;
+    getServerTime(): Promise<number>;
     publicRequest(type: Type, method: string, endpoint: string, params?: any): Promise<FormattedResponse<any>>;
     signedRequest(type: Type, method: 'POST' | 'GET' | 'DELETE' | 'PUT', endpoint: string, params?: any): Promise<FormattedResponse<any>>;
     formattedResponse(object: {

@@ -4,13 +4,16 @@ export function convertObjectIntoUrlEncoded(obj) {
 export function extractInfo(data) {
     let info = {};
     for (let obj of data) {
+        if (obj.status !== "TRADING")
+            continue;
         let filters = { status: obj.status };
         for (let filter of obj.filters) {
-            if (obj.status !== "TRADING")
-                continue;
             // filters.all = obj.filters
             if (filter.filterType == "MIN_NOTIONAL") {
-                filters.minNotional = Number(filter.notional || filter.minNotional);
+                filters.minNotional = Number(filter.notional);
+            }
+            else if (filter.filterType == "NOTIONAL") {
+                filters.minNotional = Number(filter.minNotional);
             }
             else if (filter.filterType == "PRICE_FILTER") {
                 filters.minPrice = parseFloat(filter.minPrice);
@@ -26,6 +29,8 @@ export function extractInfo(data) {
         //filters.baseAssetPrecision = obj.baseAssetPrecision;
         //filters.quoteAssetPrecision = obj.quoteAssetPrecision;
         filters.orderTypes = obj.orderTypes;
+        filters.baseAsset = obj.baseAsset;
+        filters.quoteAsset = obj.quoteAsset;
         filters.icebergAllowed = obj.icebergAllowed;
         // filters.pair = obj.pair
         info[obj.symbol] = filters;

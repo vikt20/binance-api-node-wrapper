@@ -12,10 +12,10 @@ export default class BinanceSpot extends BinanceStreams {
         return await this.publicRequest('spot', 'GET', '/api/v3/depth', { symbol: params.symbol, limit: params.limit ? params.limit : 500 });
     }
 
-    async getKlines(params: { symbol: string, interval: string, startTime?: number, endTime?: number, limit?: number}): Promise<FormattedResponse<KlineDataByRequest[]>> {
+    async getKlines(params: { symbol: string, interval: string, startTime?: number, endTime?: number, limit?: number}): Promise<FormattedResponse<KlineData[]>> {
         const request = await this.publicRequest('spot', 'GET', '/api/v3/klines', { symbol: params.symbol, interval: params.interval, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
         if (request.errors) return this.formattedResponse({ errors: request.errors });
-        return this.formattedResponse({ data: request.data });
+        return this.formattedResponse({ data: convertKlinesDataByRequest(request.data, params.symbol) });
     }
 
     async getExchangeInfo(): Promise<FormattedResponse<ExchangeInfo>> {

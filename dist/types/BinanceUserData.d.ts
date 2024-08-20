@@ -15,7 +15,7 @@ export default class BinanceUserData extends BinanceFutures {
     static TRIGGER_POSITION_EVENT: string;
     static TRIGGER_ORDER_EVENT: string;
     userData: CustomUserData;
-    init(): Promise<[void, void, void]>;
+    init(): Promise<[import("./BinanceStreams.js").HandleWebSocket, void, void]>;
     emitPosition: (symbol: string) => void;
     emitOrders: (symbol: string) => void;
     handleUserData: (data: WebSocketUserData) => void;

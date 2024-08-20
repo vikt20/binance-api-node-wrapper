@@ -140,17 +140,34 @@ export type BookTickerData = {
     bestAsk: number;
     bestAskQty: number;
 };
+export type HandleWebSocket = {
+    disconnect: Function;
+    id: string;
+};
+export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG';
 export default class BinanceStreams extends BinanceBase {
     constructor(apiKey?: string, apiSecret?: string);
-    protected subscriptions: ws[];
+    protected subscriptions: {
+        id: string;
+        disconnect: Function;
+    }[];
     protected isKeepAlive: boolean;
     closeAllSockets(): void;
-    handleWebSocket(webSocket: ws, parser: Function, callback: Function, reconnect: Function, title: string): Promise<void>;
-    spotDepthStream(symbols: string[], callback: (data: DepthData) => void): Promise<void>;
-    futuresDepthStream(symbols: string[], callback: (data: DepthData) => void): Promise<void>;
-    spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void): Promise<void>;
-    futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void): Promise<void>;
-    futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void): Promise<void>;
-    spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void): Promise<void>;
-    futuresUserDataStream(callback: (data: UserData) => void): Promise<void>;
+    closeById(id: string): void;
+    /**
+     * @param webSocket
+     * @param parser - convertation function
+     * @param callback - function to handle data
+     * @param reconnect
+     * @param title
+     * @returns object with webSocket, id and setIsKeepAlive function
+     */
+    handleWebSocket(webSocket: ws, parser: Function, callback: Function, reconnect: Function, title: string, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
 }

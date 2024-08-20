@@ -1,4 +1,5 @@
 import BinanceStreams from "./BinanceStreams.js";
+import { convertKlinesDataByRequest } from "./converters.js";
 export default class BinanceSpot extends BinanceStreams {
     constructor(apiKey, apiSecret) {
         super(apiKey, apiSecret);
@@ -10,7 +11,7 @@ export default class BinanceSpot extends BinanceStreams {
         const request = await this.publicRequest('spot', 'GET', '/api/v3/klines', { symbol: params.symbol, interval: params.interval, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
         if (request.errors)
             return this.formattedResponse({ errors: request.errors });
-        return this.formattedResponse({ data: request.data });
+        return this.formattedResponse({ data: convertKlinesDataByRequest(request.data, params.symbol) });
     }
     async getExchangeInfo() {
         let request = await this.publicRequest('spot', 'GET', '/api/v1/exchangeInfo');

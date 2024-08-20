@@ -37,7 +37,8 @@ export type ExchangeInfo = {
             minQty: string,
             maxQty: string,
             stepSize: string,
-            minNotional: string,
+            minNotional?: string,
+            notional: number,
             applyToMarket: boolean,
             avgPriceMins: number,
             limit: number,
@@ -57,6 +58,8 @@ export type ExtractedInfo = {
     minNotional: number,
     orderTypes: Array<'LIMIT' | 'LIMIT_MAKER' | 'MARKET' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT_LIMIT'>,
     icebergAllowed: boolean
+    baseAsset: string,
+    quoteAsset: string
 }
 
 export type Type = 'futures' | 'spot'
@@ -223,7 +226,6 @@ export default class BinanceBase {
     private _HTTPS_AGENT = new https.Agent({ keepAlive: true, timeout: 3600000 });
     private _AXIOS_INSTANCE = axios.create({ httpAgent: this._HTTP_AGENT, httpsAgent: this._HTTPS_AGENT });
 
-    private checkInternetConnectionInterval: NodeJS.Timeout | undefined;
     private pingServerInterval: NodeJS.Timeout | undefined;
 
     public static FUTURES_STREAM_URL: string = 'wss://fstream.binance.com/ws/';
@@ -240,8 +242,8 @@ export default class BinanceBase {
     constructor(apiKey?: string, apiSecret?: string) {
         this.apiKey = apiKey || '';
         this.apiSecret = apiSecret || '';
-        // this.hmac = crypto.createHmac('sha256', this.apiSecret);
-        // this.pingServer();
+        this.pingServer();
+        this.setTimeOffset()
     }
 
     private pingServer() {
@@ -256,6 +258,24 @@ export default class BinanceBase {
         return await this.signedRequest('futures', 'POST', '/fapi/v1/listenKey');
     }
 
+    async setTimeOffset(): Promise<void> {
+        try {
+            const serverTime: number = await this.getServerTime();
+            const localTime: number = Date.now();
+            this.timeOffset = localTime - serverTime;
+        } catch (error) {
+            throw new Error(`Failed to set time offset: ${error}`);
+        }
+    }
+
+    async getServerTime(): Promise<number> {
+        try {
+            const response: AxiosResponse<any> = await axios.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/time`);
+            return response.data.serverTime;
+        } catch (error) {
+            throw new Error(`Failed to retrieve server time: ${error}`);
+        }
+    }
     
 
     async publicRequest(type: Type, method: string, endpoint: string, params: any = {}): Promise<FormattedResponse<any>> {
@@ -279,8 +299,8 @@ export default class BinanceBase {
 
     async signedRequest(type: Type, method: 'POST' | 'GET' | 'DELETE' | 'PUT', endpoint: string, params: any = {}): Promise<FormattedResponse<any>> {
         try {
-            const timestamp = Date.now();
-            // const timestamp = Date.now() - this.timeOffset;
+            // const timestamp = Date.now();
+            const timestamp = Date.now() - this.timeOffset;
             params.timestamp = timestamp;
             const queryString = convertObjectIntoUrlEncoded(params);
             const signature = this.generateSignature(queryString);

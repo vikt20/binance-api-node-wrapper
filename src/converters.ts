@@ -1,6 +1,6 @@
 import { ExchangeInfo, ExtractedInfo, AccountData, OrderData, OrderRequestResponse, PositionData, PositionDirection } from './BinanceBase.js';
 import { DepthData, KlineData, UserData, DepthDataWebSocket, KlineDataWebSocket, UserDataWebSocket, AccountDataWebSocket, OrderDataWebSocket, BookTickerDataWebSocket, BookTickerData } from './BinanceStreams.js';
-import { KlinesDataByRequest, PositionDataByRequest } from './BinanceFutures.js';
+import { KlineDataByRequest, PositionDataByRequest } from './BinanceFutures.js';
 
 export function convertObjectIntoUrlEncoded(obj: any) {
     return Object.keys(obj).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k])).join('&');
@@ -9,13 +9,16 @@ export function convertObjectIntoUrlEncoded(obj: any) {
 export function extractInfo(data: ExchangeInfo['symbols']) {
     let info: { [key: string]: ExtractedInfo } = {};
     for (let obj of data) {
+        if (obj.status !== "TRADING") continue
+
         let filters: any = { status: obj.status };
         for (let filter of obj.filters) {
-            if (obj.status !== "TRADING") continue
             // filters.all = obj.filters
 
             if (filter.filterType == "MIN_NOTIONAL") {
-                filters.minNotional = Number(filter.notional || filter.minNotional);
+                filters.minNotional = Number(filter.notional);
+            } else if (filter.filterType == "NOTIONAL") {
+                filters.minNotional = Number(filter.minNotional);
             } else if (filter.filterType == "PRICE_FILTER") {
                 filters.minPrice = parseFloat(filter.minPrice);
                 filters.maxPrice = parseFloat(filter.maxPrice);
@@ -29,6 +32,8 @@ export function extractInfo(data: ExchangeInfo['symbols']) {
         //filters.baseAssetPrecision = obj.baseAssetPrecision;
         //filters.quoteAssetPrecision = obj.quoteAssetPrecision;
         filters.orderTypes = obj.orderTypes;
+        filters.baseAsset = obj.baseAsset;
+        filters.quoteAsset = obj.quoteAsset;
         filters.icebergAllowed = obj.icebergAllowed;
         // filters.pair = obj.pair
         info[obj.symbol] = filters;
@@ -236,7 +241,7 @@ export function convertBookTickerData(rawData: BookTickerDataWebSocket): BookTic
     return { symbol, bestBid: parseFloat(bestBid), bestBidQty: parseFloat(bestBidQty), bestAsk: parseFloat(bestAsk), bestAskQty: parseFloat(bestAskQty) };
 }
 
-export function convertKlinesDataByRequest(rawData: KlinesDataByRequest, symbol: string): KlineData[] {
+export function convertKlinesDataByRequest(rawData: KlineDataByRequest[], symbol: string): KlineData[] {
     return rawData.map(data => ({
         symbol, // Replace with actual symbol value
         time: data[0],

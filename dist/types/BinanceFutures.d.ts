@@ -1,4 +1,4 @@
-import BinanceStreams from './BinanceStreams.js';
+import BinanceStreams, { KlineData } from './BinanceStreams.js';
 import { FormattedResponse, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderSide, OrderType, TimeInForce, OrderWorkingType, OrderStatus, PositionSide, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, StopLimitOrderParams, ReducePositionParams, ExchangeInfo } from './BinanceBase.js';
 type OrderInput = {
     symbol: string;
@@ -85,7 +85,8 @@ export default class BinanceFutures extends BinanceStreams {
         startTime?: number;
         endTime?: number;
         limit?: number;
-    }): Promise<FormattedResponse<KlineDataByRequest[]>>;
+    }): Promise<FormattedResponse<KlineData[]>>;
+    getBalance(): Promise<FormattedResponse<AccountData['balances']>>;
     getPositionRisk(): Promise<FormattedResponse<any>>;
     getOpenPositions(): Promise<FormattedResponse<AccountData['positions']>>;
     getOpenPositionBySymbol(params: {

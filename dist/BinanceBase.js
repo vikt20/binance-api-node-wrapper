@@ -12,8 +12,8 @@ class BinanceBase {
         this.recvWindow = 3000;
         this.apiKey = apiKey || '';
         this.apiSecret = apiSecret || '';
-        // this.hmac = crypto.createHmac('sha256', this.apiSecret);
-        // this.pingServer();
+        this.pingServer();
+        this.setTimeOffset();
     }
     pingServer() {
         clearInterval(this.pingServerInterval);
@@ -24,6 +24,25 @@ class BinanceBase {
     }
     async getFuturesListenKey() {
         return await this.signedRequest('futures', 'POST', '/fapi/v1/listenKey');
+    }
+    async setTimeOffset() {
+        try {
+            const serverTime = await this.getServerTime();
+            const localTime = Date.now();
+            this.timeOffset = localTime - serverTime;
+        }
+        catch (error) {
+            throw new Error(`Failed to set time offset: ${error}`);
+        }
+    }
+    async getServerTime() {
+        try {
+            const response = await axios.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/time`);
+            return response.data.serverTime;
+        }
+        catch (error) {
+            throw new Error(`Failed to retrieve server time: ${error}`);
+        }
     }
     async publicRequest(type, method, endpoint, params = {}) {
         try {
@@ -46,8 +65,8 @@ class BinanceBase {
     }
     async signedRequest(type, method, endpoint, params = {}) {
         try {
-            const timestamp = Date.now();
-            // const timestamp = Date.now() - this.timeOffset;
+            // const timestamp = Date.now();
+            const timestamp = Date.now() - this.timeOffset;
             params.timestamp = timestamp;
             const queryString = convertObjectIntoUrlEncoded(params);
             const signature = this.generateSignature(queryString);

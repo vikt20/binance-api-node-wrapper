@@ -1,6 +1,5 @@
 import { FormattedResponse, GetStaticDepthParams, StaticDepth, ExchangeInfo } from "./BinanceBase.js";
-import { KlineDataByRequest } from "./BinanceFutures.js";
-import BinanceStreams from "./BinanceStreams.js";
+import BinanceStreams, { KlineData } from "./BinanceStreams.js";
 export default class BinanceSpot extends BinanceStreams {
     constructor(apiKey?: string, apiSecret?: string);
     getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>>;
@@ -10,6 +9,6 @@ export default class BinanceSpot extends BinanceStreams {
         startTime?: number;
         endTime?: number;
         limit?: number;
-    }): Promise<FormattedResponse<KlineDataByRequest[]>>;
+    }): Promise<FormattedResponse<KlineData[]>>;
     getExchangeInfo(): Promise<FormattedResponse<ExchangeInfo>>;
 }

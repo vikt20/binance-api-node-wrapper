@@ -1,5 +1,5 @@
 import BinanceStreams from './BinanceStreams.js';
-import { convertPositionDataByRequest, convertOrderDataRequestResponse } from './converters.js';
+import { convertPositionDataByRequest, convertOrderDataRequestResponse, convertKlinesDataByRequest } from './converters.js';
 export default class BinanceFutures extends BinanceStreams {
     constructor(apiKey, apiSecret) {
         super(apiKey, apiSecret);
@@ -24,7 +24,10 @@ export default class BinanceFutures extends BinanceStreams {
         const request = await this.publicRequest('futures', 'GET', '/fapi/v1/klines', { symbol: params.symbol, interval: params.interval, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
         if (request.errors)
             return this.formattedResponse({ errors: request.errors });
-        return this.formattedResponse({ data: request.data });
+        return this.formattedResponse({ data: convertKlinesDataByRequest(request.data, params.symbol) });
+    }
+    async getBalance() {
+        return await this.signedRequest('futures', 'GET', '/fapi/v2/balance');
     }
     async getPositionRisk() {
         return await this.signedRequest('futures', 'GET', '/fapi/v2/positionRisk');
@@ -49,7 +52,7 @@ export default class BinanceFutures extends BinanceStreams {
     }
     async getOpenPositionBySymbol(params) {
         let request = await this.getOpenPositions();
-        if (request.errors)
+        if (request.errors || !request.data)
             return this.formattedResponse({ errors: request.errors });
         let position = request.data.find(p => p.symbol === params.symbol);
         if (typeof position === 'undefined')

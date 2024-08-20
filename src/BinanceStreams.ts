@@ -151,115 +151,158 @@ export type BookTickerData = {
     bestAskQty: number
 }
 
+export type HandleWebSocket = {
+    // webSocket: ws,
+    disconnect: Function,
+    id: string
+}
+
+export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG'
+
 
 export default class BinanceStreams extends BinanceBase {
     constructor(apiKey?: string, apiSecret?: string) {
         super(apiKey, apiSecret)
     }
 
-    protected subscriptions: ws[] = [];
+    protected subscriptions: { id: string, disconnect: Function }[] = [];
     protected isKeepAlive: boolean = true;
 
     closeAllSockets() {
         this.isKeepAlive = false;
-        this.subscriptions.forEach(ws => ws.close());
+        this.subscriptions.forEach(i => i.disconnect());
+        this.subscriptions = [];
         // console.log(`WebSocket subscriptions:`, this.subscriptions);
     }
+    closeById(id: string) {
+        const index = this.subscriptions.findIndex(i => i.id === id);
+        if (index > -1) {
+            this.subscriptions[index].disconnect();
+            this.subscriptions.splice(index, 1);
+        }
+    }
 
-    handleWebSocket(webSocket: ws, parser: Function, callback: Function, reconnect: Function, title: string): Promise<void> {
-        this.subscriptions.push(webSocket);
+    /**
+     * @param webSocket
+     * @param parser - convertation function
+     * @param callback - function to handle data
+     * @param reconnect
+     * @param title
+     * @returns object with webSocket, id and setIsKeepAlive function
+     */
+    handleWebSocket(webSocket: ws, parser: Function, callback: Function, reconnect: Function, title: string, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
+        //generate random ID
+        const id = Math.random().toString(36).substring(7);
+
+        let isKeepAlive = true
+
+        const disconnect = () => {
+            isKeepAlive = false;
+            webSocket.close()
+        }
+
+        this.subscriptions.push({ id, disconnect });
+
         return new Promise((resolve, reject) => {
             //onmessage
-            webSocket.on('message', (data) => {
+            webSocket.on('message', (data: any) => {
                 callback(parser(JSON.parse(data)));
             });
             //onping
-            webSocket.on('ping', (data) => {
+            webSocket.on('ping', (data: any) => {
                 console.log(`${title} - PING RECEIVED`);
                 webSocket.pong(data);
+            });
+            webSocket.on('pong', (data: any) => {
+                // console.log(`${title} - PONG RECEIVED`);
+                if (statusCallback) statusCallback('PONG');
             });
             //onclose
             webSocket.on('close', () => {
                 console.log(`${title} - CLOSED`);
-                if (this.isKeepAlive) reconnect();
+                if (statusCallback) statusCallback('CLOSE');
+                if (isKeepAlive) reconnect();
             });
             //onopen
             webSocket.on('open', () => {
                 console.log(`${title} - OPEN`);
-                resolve();
+                if (statusCallback) statusCallback('OPEN');
+                resolve({ disconnect, id })
             });
             //onerror
-            webSocket.on('error', (error) => {
+            webSocket.on('error', (error: string) => {
+                if (statusCallback) statusCallback('ERROR');
                 // console.log(`${title} - ERROR: `, error);
-                this.isKeepAlive = false;
-                // reject(error);
-                throw new Error(`${title} - ERROR: ${error}`);
-                
+                isKeepAlive = false;
+
+                // throw new Error(`${title} - ERROR: ${error}`);
+                reject(error);
+
             });
         })
     }
 
     //subscribe to spot depth stream
-    spotDepthStream(symbols: string[], callback: (data: DepthData) => void): Promise<void> {
+    spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
         const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
         const reconnect = () => this.spotDepthStream(symbols, callback);
 
-        return this.handleWebSocket(webSocket, convertDepthData, callback, reconnect, 'spotDepthStream()');
+        return this.handleWebSocket(webSocket, convertDepthData, callback, reconnect, 'spotDepthStream()', statusCallback);
     }
 
     //subscribe to futures depth stream
-    futuresDepthStream(symbols: string[], callback: (data: DepthData) => void): Promise<void> {
+    futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
         const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
         const reconnect = () => this.futuresDepthStream(symbols, callback);
 
-        return this.handleWebSocket(webSocket, convertDepthData, callback, reconnect, 'futuresDepthStream()');
+        return this.handleWebSocket(webSocket, convertDepthData, callback, reconnect, 'futuresDepthStream()', statusCallback);
     }
 
-    spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void) {
+    spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@kline_${interval}`);
         const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
         const reconnect = () => this.spotCandleStickStream(symbols, interval, callback);
 
-        return this.handleWebSocket(webSocket, convertKlineData, callback, reconnect, 'spotCandleStickStream()');
+        return this.handleWebSocket(webSocket, convertKlineData, callback, reconnect, 'spotCandleStickStream()', statusCallback);
     }
 
-    futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void) {
+    futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@kline_${interval}`);
         const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
         const reconnect = () => this.futuresCandleStickStream(symbols, interval, callback);
 
-        return this.handleWebSocket(webSocket, convertKlineData, callback, reconnect, 'futuresCanldeStickStream()');
+        return this.handleWebSocket(webSocket, convertKlineData, callback, reconnect, 'futuresCanldeStickStream()', statusCallback);
     }
 
-    futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void) {
+    futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@bookTicker`);
         const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
         const reconnect = () => this.futuresBookTickerStream(symbols, callback);
 
-        return this.handleWebSocket(webSocket, convertBookTickerData, callback, reconnect, 'futuresBookTicketStream()');
+        return this.handleWebSocket(webSocket, convertBookTickerData, callback, reconnect, 'futuresBookTicketStream()', statusCallback);
     }
 
-    spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void) {
+    spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@bookTicker`);
         const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
         const reconnect = () => this.spotBookTickerStream(symbols, callback);
 
-        return this.handleWebSocket(webSocket, convertBookTickerData, callback, reconnect, 'spotBookTicketStream()');
+        return this.handleWebSocket(webSocket, convertBookTickerData, callback, reconnect, 'spotBookTicketStream()', statusCallback);
     }
 
-    async futuresUserDataStream(callback: (data: UserData) => void): Promise<void> {
+    async futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const listenKey = await this.getFuturesListenKey();
-        if (!listenKey.success) {
+        if (!listenKey.success || !listenKey.data) {
             console.log('Error getting listen key: ', listenKey.errors);
             return Promise.reject()
         }
 
         const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL + listenKey.data.listenKey);
-        const reconnect = () => this.futuresUserDataStream(callback);
+        const reconnect = () => this.futuresUserDataStream(callback, statusCallback);
 
-        return this.handleWebSocket(webSocket, convertUserData, callback, reconnect, 'futuresUserDataStream()');
+        return this.handleWebSocket(webSocket, convertUserData, callback, reconnect, 'futuresUserDataStream()', statusCallback);
     }
 
 

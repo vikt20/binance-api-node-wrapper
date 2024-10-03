@@ -1,5 +1,5 @@
 // import BinanceBase, { AccountData,  } from "./BinanceBase.js";
-import BinanceBase, { AccountData, OrderData, OrderType, TimeInForce, OrderStatus, OrderWorkingType, PositionDirection } from "./BinanceBase.js";
+import BinanceBase, { AccountData, OrderData, OrderType, TimeInForce, OrderStatus, OrderWorkingType, PositionDirection, Type } from "./BinanceBase.js";
 import { convertDepthData, convertKlineData, convertUserData, convertBookTickerData } from "./converters.js";
 import ws from 'ws';
 
@@ -166,12 +166,12 @@ export default class BinanceStreams extends BinanceBase {
     }
 
     protected subscriptions: { id: string, disconnect: Function }[] = [];
-    protected isKeepAlive: boolean = true;
+    protected listenKeyInterval: NodeJS.Timeout | undefined
 
     closeAllSockets() {
-        this.isKeepAlive = false;
         this.subscriptions.forEach(i => i.disconnect());
         this.subscriptions = [];
+        clearInterval(this.listenKeyInterval)
         // console.log(`WebSocket subscriptions:`, this.subscriptions);
     }
     closeById(id: string) {
@@ -242,6 +242,12 @@ export default class BinanceStreams extends BinanceBase {
         })
     }
 
+    // keep listen key alive by ping every 60min
+    keepAliveListenKeyByInterval = (type: Type) => {
+        clearInterval(this.listenKeyInterval)
+        this.listenKeyInterval = setInterval(() => this.keepAliveListenKey(type), 60 * 60 * 1000)
+    }
+
     //subscribe to spot depth stream
     spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
@@ -298,6 +304,9 @@ export default class BinanceStreams extends BinanceBase {
             console.log('Error getting listen key: ', listenKey.errors);
             return Promise.reject()
         }
+
+        // send ping every 60min to keep listenKey alive
+        this.keepAliveListenKeyByInterval('futures')
 
         const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL + listenKey.data.listenKey);
         const reconnect = () => this.futuresUserDataStream(callback, statusCallback);

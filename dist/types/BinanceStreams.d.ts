@@ -1,4 +1,5 @@
-import BinanceBase, { AccountData, OrderData, OrderType, TimeInForce, OrderStatus, OrderWorkingType, PositionDirection } from "./BinanceBase.js";
+/// <reference types="node" />
+import BinanceBase, { AccountData, OrderData, OrderType, TimeInForce, OrderStatus, OrderWorkingType, PositionDirection, Type } from "./BinanceBase.js";
 import ws from 'ws';
 export type UserDataWebSocket = {
     e: UserData['event'];
@@ -151,7 +152,7 @@ export default class BinanceStreams extends BinanceBase {
         id: string;
         disconnect: Function;
     }[];
-    protected isKeepAlive: boolean;
+    protected listenKeyInterval: NodeJS.Timeout | undefined;
     closeAllSockets(): void;
     closeById(id: string): void;
     /**
@@ -163,6 +164,7 @@ export default class BinanceStreams extends BinanceBase {
      * @returns object with webSocket, id and setIsKeepAlive function
      */
     handleWebSocket(webSocket: ws, parser: Function, callback: Function, reconnect: Function, title: string, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    keepAliveListenKeyByInterval: (type: Type) => void;
     spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;

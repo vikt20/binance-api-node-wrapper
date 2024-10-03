@@ -6,12 +6,16 @@ export default class BinanceStreams extends BinanceBase {
     constructor(apiKey, apiSecret) {
         super(apiKey, apiSecret);
         this.subscriptions = [];
-        this.isKeepAlive = true;
+        // keep listen key alive by ping every 60min
+        this.keepAliveListenKeyByInterval = (type) => {
+            clearInterval(this.listenKeyInterval);
+            this.listenKeyInterval = setInterval(() => this.keepAliveListenKey(type), 60 * 60 * 1000);
+        };
     }
     closeAllSockets() {
-        this.isKeepAlive = false;
         this.subscriptions.forEach(i => i.disconnect());
         this.subscriptions = [];
+        clearInterval(this.listenKeyInterval);
         // console.log(`WebSocket subscriptions:`, this.subscriptions);
     }
     closeById(id) {
@@ -123,6 +127,8 @@ export default class BinanceStreams extends BinanceBase {
             console.log('Error getting listen key: ', listenKey.errors);
             return Promise.reject();
         }
+        // send ping every 60min to keep listenKey alive
+        this.keepAliveListenKeyByInterval('futures');
         const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL + listenKey.data.listenKey);
         const reconnect = () => this.futuresUserDataStream(callback, statusCallback);
         return this.handleWebSocket(webSocket, convertUserData, callback, reconnect, 'futuresUserDataStream()', statusCallback);

@@ -219,6 +219,7 @@ export default class BinanceBase {
     private pingServer;
     private generateSignature;
     getFuturesListenKey(): Promise<FormattedResponse<ListenKey>>;
+    keepAliveListenKey(type: Type): Promise<FormattedResponse<any>>;
     setTimeOffset(): Promise<void>;
     getServerTime(): Promise<number>;
     publicRequest(type: Type, method: string, endpoint: string, params?: any): Promise<FormattedResponse<any>>;

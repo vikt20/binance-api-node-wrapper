@@ -258,6 +258,10 @@ export default class BinanceBase {
         return await this.signedRequest('futures', 'POST', '/fapi/v1/listenKey');
     }
 
+    async keepAliveListenKey(type: Type) {
+        return type === 'futures' ? await this.signedRequest(type, 'PUT', '/fapi/v1/listenKey') : await this.signedRequest(type, 'PUT', '/api/v3/userDataStream')
+    }
+
     async setTimeOffset(): Promise<void> {
         try {
             const serverTime: number = await this.getServerTime();

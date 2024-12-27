@@ -197,3 +197,7 @@ export function convertKlinesDataByRequest(rawData, symbol) {
         trades: data[8] // Assuming number of trades is at index 8
     }));
 }
+export function convertTradeDataWebSocket(rawData) {
+    let { s: symbol, p: price, q: quantity, a: sellerOrderId, T: tradeTime, m: isBuyerMaker } = rawData.data;
+    return { symbol, price: parseFloat(price), quantity: parseFloat(quantity), tradeTime, orderType: isBuyerMaker ? "SELL" : "BUY" };
+}

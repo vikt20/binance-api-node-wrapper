@@ -1,5 +1,5 @@
 import { ExchangeInfo, ExtractedInfo, AccountData, OrderData, OrderRequestResponse, PositionData, PositionDirection } from './BinanceBase.js';
-import { DepthData, KlineData, UserData, DepthDataWebSocket, KlineDataWebSocket, UserDataWebSocket, AccountDataWebSocket, OrderDataWebSocket, BookTickerDataWebSocket, BookTickerData } from './BinanceStreams.js';
+import { TradeData, TradeDataWebSocket, DepthData, KlineData, UserData, DepthDataWebSocket, KlineDataWebSocket, UserDataWebSocket, AccountDataWebSocket, OrderDataWebSocket, BookTickerDataWebSocket, BookTickerData } from './BinanceStreams.js';
 import { KlineDataByRequest, PositionDataByRequest } from './BinanceFutures.js';
 
 export function convertObjectIntoUrlEncoded(obj: any) {
@@ -252,4 +252,9 @@ export function convertKlinesDataByRequest(rawData: KlineDataByRequest[], symbol
         volume: parseFloat(data[5]),
         trades: data[8] // Assuming number of trades is at index 8
     }));
+}
+
+export function convertTradeDataWebSocket(rawData: TradeDataWebSocket): TradeData {
+    let { s: symbol, p: price, q: quantity, a: sellerOrderId, T: tradeTime, m: isBuyerMaker } = rawData.data;
+    return { symbol, price: parseFloat(price), quantity: parseFloat(quantity),  tradeTime, orderType: isBuyerMaker ? "SELL" : "BUY" };
 }

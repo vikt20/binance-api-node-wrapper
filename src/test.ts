@@ -1,5 +1,6 @@
-import BinanceSpot from "./BinanceSpot.js";
+import BinanceStreams from "./BinanceStreams.js";
 
-const binance = new BinanceSpot();
+const binanceStreams = new BinanceStreams();
 
-binance.getKlines({ symbol: 'BTCUSDT', interval: '1m', limit: 100 }).then(console.log);
+// test trade stream
+binanceStreams.spotTradeStream(["FILUSDT"], (data) => console.log(data));

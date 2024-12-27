@@ -141,6 +141,28 @@ export type BookTickerData = {
     bestAsk: number;
     bestAskQty: number;
 };
+export type TradeDataWebSocket = {
+    stream: string;
+    data: {
+        "e": "aggTrade";
+        "E": 123456789;
+        "s": "BTCUSDT";
+        "a": 5933014;
+        "p": "0.001";
+        "q": "100";
+        "f": 100;
+        "l": 105;
+        "T": 123456785;
+        "m": true;
+    };
+};
+export type TradeData = {
+    symbol: string;
+    price: number;
+    quantity: number;
+    tradeTime: number;
+    orderType: 'BUY' | 'SELL';
+};
 export type HandleWebSocket = {
     disconnect: Function;
     id: string;
@@ -171,5 +193,7 @@ export default class BinanceStreams extends BinanceBase {
     futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
 }

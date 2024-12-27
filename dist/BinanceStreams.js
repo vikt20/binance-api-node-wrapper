@@ -1,6 +1,6 @@
 // import BinanceBase, { AccountData,  } from "./BinanceBase.js";
 import BinanceBase from "./BinanceBase.js";
-import { convertDepthData, convertKlineData, convertUserData, convertBookTickerData } from "./converters.js";
+import { convertTradeDataWebSocket, convertDepthData, convertKlineData, convertUserData, convertBookTickerData } from "./converters.js";
 import ws from 'ws';
 export default class BinanceStreams extends BinanceBase {
     constructor(apiKey, apiSecret) {
@@ -120,6 +120,18 @@ export default class BinanceStreams extends BinanceBase {
         const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
         const reconnect = () => this.spotBookTickerStream(symbols, callback);
         return this.handleWebSocket(webSocket, convertBookTickerData, callback, reconnect, 'spotBookTicketStream()', statusCallback);
+    }
+    async futuresTradeStream(symbols, callback, statusCallback) {
+        const streams = symbols.map(symbol => `${symbol.toLowerCase()}@aggTrade`);
+        const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
+        const reconnect = () => this.futuresTradeStream(symbols, callback, statusCallback);
+        return this.handleWebSocket(webSocket, convertTradeDataWebSocket, callback, reconnect, 'futuresTradeStream()', statusCallback);
+    }
+    async spotTradeStream(symbols, callback, statusCallback) {
+        const streams = symbols.map(symbol => `${symbol.toLowerCase()}@aggTrade`);
+        const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
+        const reconnect = () => this.spotTradeStream(symbols, callback, statusCallback);
+        return this.handleWebSocket(webSocket, convertTradeDataWebSocket, callback, reconnect, 'spotTradeStream()', statusCallback);
     }
     async futuresUserDataStream(callback, statusCallback) {
         const listenKey = await this.getFuturesListenKey();

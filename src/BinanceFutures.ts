@@ -1,5 +1,5 @@
 import BinanceStreams, { KlineData } from './BinanceStreams.js';
-import { convertPositionDataByRequest, convertOrderDataRequestResponse, extractInfo, convertKlinesDataByRequest } from './converters.js';
+import { convertPositionDataByRequest, convertOrderDataRequestResponse, extractInfo, convertKlinesDataByRequest, convertAggTradesDataByRequest } from './converters.js';
 
 import {
     FormattedResponse, ListenKey, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderSide, OrderType, TimeInForce, OrderWorkingType, OrderStatus, PositionDirection, PositionSide, GetOpenOrdersBySymbolParams,
@@ -11,7 +11,9 @@ import {
     StopLimitOrderParams,
     ReducePositionParams,
     ExtractedInfo,
-    ExchangeInfo
+    ExchangeInfo,
+    GetAggTradesParams,
+    AggTradesData
 } from './BinanceBase.js';
 
 type OrderInput = {
@@ -91,8 +93,67 @@ export type KlineDataByRequest = [
     string, //Taker buy quote asset volume
     string //Ignore
 ]
+/**
+ * {
+  "e": "aggTrade",  // Event type
+  "E": 123456789,   // Event time
+  "s": "BTCUSDT",    // Symbol
+  "a": 5933014,		// Aggregate trade ID
+  "p": "0.001",     // Price
+  "q": "100",       // Quantity
+  "f": 100,         // First trade ID
+  "l": 105,         // Last trade ID
+  "T": 123456785,   // Trade time
+  "m": true,        // Is the buyer the market maker?
+}
+ */
+export type AggTradesDataByRequest = {
+    "a": number,         // Aggregate tradeId
+    "p": string,  // Price
+    "q": string,  // Quantity
+    "f": number,         // First tradeId
+    "l": number,         // Last tradeId
+    "T": number, // Timestamp
+    "m": boolean,          // Was the buyer the maker?
+}
 
-export default class BinanceFutures extends BinanceStreams {
+/**
+ * {"buySellRatio":"0.9083","sellVol":"409833397.0000","buyVol":"372257351.0000","timestamp":1764875700000}
+ */
+export type LongShortRatioDataByRequest = {
+    "buySellRatio": string, // Buy sell ratio
+    "sellVol": string, // Sell volume
+    "buyVol": string, // Buy volume
+    "timestamp": number, // Timestamp
+}
+
+
+export interface IBinanceClass {
+    closeListenKey(): Promise<any>;
+    getExchangeInfo(): Promise<FormattedResponse<ExchangeInfo>>;
+    getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>>;
+    getKlines(params: { symbol: string, interval: string, startTime?: number, endTime?: number, limit?: number }): Promise<FormattedResponse<KlineData[]>>;
+    getBalance(): Promise<FormattedResponse<AccountData['balances']>>;
+    getPositionRisk(): Promise<FormattedResponse<any>>;
+    getOpenPositions(): Promise<FormattedResponse<AccountData['positions']>>;
+    getOpenPositionBySymbol(params: { symbol: string }): Promise<FormattedResponse<PositionData>>;
+    getOpenOrders(): Promise<FormattedResponse<OrderData[]>>;
+    getOpenOrdersBySymbol(params: GetOpenOrdersBySymbolParams): Promise<FormattedResponse<OrderData[]>>;
+    cancelAllOpenOrders(params: CancelAllOpenOrdersParams): Promise<FormattedResponse<any>>;
+    cancelOrderById(params: CancelOrderByIdParams): Promise<FormattedResponse<any>>;
+    trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    marketBuy(params: MarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    marketSell(params: MarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    limitBuy(params: LimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    limitSell(params: LimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    stopOrder(params: StopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    reduceLimitOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    stopLimitOrder(params: StopLimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    customOrder(orderInput: OrderInput): Promise<FormattedResponse<OrderRequestResponse>>;
+}
+
+export default class BinanceFutures extends BinanceStreams implements IBinanceClass {
     constructor(apiKey?: string, apiSecret?: string) {
         super(apiKey, apiSecret);
     }
@@ -118,6 +179,16 @@ export default class BinanceFutures extends BinanceStreams {
         const request = await this.publicRequest('futures', 'GET', '/fapi/v1/klines', { symbol: params.symbol, interval: params.interval, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
         if (request.errors) return this.formattedResponse({ errors: request.errors });
         return this.formattedResponse({ data: convertKlinesDataByRequest(request.data, params.symbol) });
+    }
+    async getAggTrades(params: GetAggTradesParams): Promise<FormattedResponse<AggTradesData[]>> {
+        const request = await this.publicRequest('futures', 'GET', '/fapi/v1/aggTrades', { symbol: params.symbol, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
+        if (request.errors) return this.formattedResponse({ errors: request.errors });
+        return this.formattedResponse({ data: convertAggTradesDataByRequest(request.data, params.symbol) });
+    }
+    async getLongShortRatio(params: { symbol: string, limit?: number, period?: string, startTime?: number, endTime?: number }): Promise<FormattedResponse<LongShortRatioDataByRequest[]>> {
+        const request = await this.publicRequest('futures', 'GET', '/futures/data/takerlongshortRatio', { symbol: params.symbol, limit: params.limit, period: params.period, startTime: params.startTime, endTime: params.endTime });
+        if (request.errors) return this.formattedResponse({ errors: request.errors });
+        return this.formattedResponse({ data: request.data });
     }
     async getBalance(): Promise<FormattedResponse<AccountData['balances']>> {
         return await this.signedRequest('futures', 'GET', '/fapi/v2/balance');

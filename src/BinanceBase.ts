@@ -159,9 +159,24 @@ export type StaticDepth = {
     bids: Array<[string, string]>
 }
 
+export type AggTradesData = {
+    symbol: string,
+    id: number,
+    price: number,
+    quantity: number,
+    time: number,
+    isBuyer: boolean
+}
+
 //make types for all methods as object values
 export type GetStaticDepthParams = {
     symbol: string,
+    limit?: number
+}
+export type GetAggTradesParams = {
+    symbol: string,
+    startTime?: number,
+    endTime?: number,
     limit?: number
 }
 export type CancelOrderByIdParams = {
@@ -238,7 +253,7 @@ export default class BinanceBase {
 
     protected timeOffset: number = 0;
     protected recvWindow: number = 3000;
-    
+
     constructor(apiKey?: string, apiSecret?: string) {
         this.apiKey = apiKey || '';
         this.apiSecret = apiSecret || '';
@@ -280,7 +295,7 @@ export default class BinanceBase {
             throw new Error(`Failed to retrieve server time: ${error}`);
         }
     }
-    
+
 
     async publicRequest(type: Type, method: string, endpoint: string, params: any = {}): Promise<FormattedResponse<any>> {
         try {

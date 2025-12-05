@@ -1,6 +1,6 @@
-import { ExchangeInfo, ExtractedInfo, AccountData, OrderData, OrderRequestResponse, PositionData, PositionDirection } from './BinanceBase.js';
+import { ExchangeInfo, ExtractedInfo, AccountData, OrderData, OrderRequestResponse, PositionData, PositionDirection, AggTradesData } from './BinanceBase.js';
 import { TradeData, TradeDataWebSocket, DepthData, KlineData, UserData, DepthDataWebSocket, KlineDataWebSocket, UserDataWebSocket, AccountDataWebSocket, OrderDataWebSocket, BookTickerDataWebSocket, BookTickerData } from './BinanceStreams.js';
-import { KlineDataByRequest, PositionDataByRequest } from './BinanceFutures.js';
+import { AggTradesDataByRequest, KlineDataByRequest, PositionDataByRequest } from './BinanceFutures.js';
 
 export function convertObjectIntoUrlEncoded(obj: any) {
     return Object.keys(obj).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k])).join('&');
@@ -67,9 +67,9 @@ export function convertKlineData(inputData: KlineDataWebSocket): KlineData {
 export function convertUserData(rawData: UserDataWebSocket): UserData {
     let { e, o, a } = rawData;
     if (e === "ACCOUNT_UPDATE") {
-        return { event: e, orderData: undefined, accountData: convertAccountDataWebSocketRaw(a) };
+        return { event: e, orderData: undefined, accountData: convertAccountDataWebSocketRaw(a!) };
     } else if (e === "ORDER_TRADE_UPDATE") {
-        return { event: e, accountData: undefined, orderData: convertOrderDataWebSocket(o) };
+        return { event: e, accountData: undefined, orderData: convertOrderDataWebSocket(o!) };
     } else {
         return { event: e, accountData: undefined, orderData: undefined };
     }
@@ -256,5 +256,17 @@ export function convertKlinesDataByRequest(rawData: KlineDataByRequest[], symbol
 
 export function convertTradeDataWebSocket(rawData: TradeDataWebSocket): TradeData {
     let { s: symbol, p: price, q: quantity, a: sellerOrderId, T: tradeTime, m: isBuyerMaker } = rawData.data;
-    return { symbol, price: parseFloat(price), quantity: parseFloat(quantity),  tradeTime, orderType: isBuyerMaker ? "SELL" : "BUY" };
+    return { symbol, price: parseFloat(price), quantity: parseFloat(quantity), tradeTime, orderType: isBuyerMaker ? "SELL" : "BUY" };
+}
+
+export function convertAggTradesDataByRequest(rawData: AggTradesDataByRequest[], symbol: string): AggTradesData[] {
+
+    return rawData.map(data => ({
+        symbol,
+        id: data.a,
+        price: parseFloat(data.p),
+        quantity: parseFloat(data.q),
+        time: data.T,
+        isBuyer: data.m
+    }));
 }

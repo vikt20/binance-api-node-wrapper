@@ -46,10 +46,10 @@ export default class BinanceUserData extends BinanceFutures {
 
         switch (data.event) {
             case "ACCOUNT_UPDATE":
-                data.accountData.positions.forEach(this.setPosition)
+                if (data.accountData) data.accountData.positions.forEach(this.setPosition)
                 break;
             case "ORDER_TRADE_UPDATE":
-                this.setOrders(data.orderData);
+                if (data.orderData) this.setOrders(data.orderData);
                 break;
             default:
                 // console.log(`No event found: `, data)
@@ -61,7 +61,7 @@ export default class BinanceUserData extends BinanceFutures {
     async requestAllOrders(): Promise<void> {
         const request = await this.getOpenOrders();
 
-        if (!request.success) {
+        if (!request.success || !request.data) {
             throw new Error(`getOpenOrders() - ${request.errors}`)
         }
 
@@ -71,7 +71,7 @@ export default class BinanceUserData extends BinanceFutures {
     async requestAllPositions() {
         const request = await this.getOpenPositions();
 
-        if (!request.success) {
+        if (!request.success || !request.data) {
             throw new Error(`getOpenPositions() - ${request.errors}`)
         }
 

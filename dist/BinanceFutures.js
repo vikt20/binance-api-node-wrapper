@@ -1,5 +1,5 @@
 import BinanceStreams from './BinanceStreams.js';
-import { convertPositionDataByRequest, convertOrderDataRequestResponse, convertKlinesDataByRequest } from './converters.js';
+import { convertPositionDataByRequest, convertOrderDataRequestResponse, convertKlinesDataByRequest, convertAggTradesDataByRequest } from './converters.js';
 export default class BinanceFutures extends BinanceStreams {
     constructor(apiKey, apiSecret) {
         super(apiKey, apiSecret);
@@ -25,6 +25,18 @@ export default class BinanceFutures extends BinanceStreams {
         if (request.errors)
             return this.formattedResponse({ errors: request.errors });
         return this.formattedResponse({ data: convertKlinesDataByRequest(request.data, params.symbol) });
+    }
+    async getAggTrades(params) {
+        const request = await this.publicRequest('futures', 'GET', '/fapi/v1/aggTrades', { symbol: params.symbol, startTime: params.startTime, endTime: params.endTime, limit: params.limit });
+        if (request.errors)
+            return this.formattedResponse({ errors: request.errors });
+        return this.formattedResponse({ data: convertAggTradesDataByRequest(request.data, params.symbol) });
+    }
+    async getLongShortRatio(params) {
+        const request = await this.publicRequest('futures', 'GET', '/futures/data/takerlongshortRatio', { symbol: params.symbol, limit: params.limit, period: params.period, startTime: params.startTime, endTime: params.endTime });
+        if (request.errors)
+            return this.formattedResponse({ errors: request.errors });
+        return this.formattedResponse({ data: request.data });
     }
     async getBalance() {
         return await this.signedRequest('futures', 'GET', '/fapi/v2/balance');

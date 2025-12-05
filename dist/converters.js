@@ -201,3 +201,13 @@ export function convertTradeDataWebSocket(rawData) {
     let { s: symbol, p: price, q: quantity, a: sellerOrderId, T: tradeTime, m: isBuyerMaker } = rawData.data;
     return { symbol, price: parseFloat(price), quantity: parseFloat(quantity), tradeTime, orderType: isBuyerMaker ? "SELL" : "BUY" };
 }
+export function convertAggTradesDataByRequest(rawData, symbol) {
+    return rawData.map(data => ({
+        symbol,
+        id: data.a,
+        price: parseFloat(data.p),
+        quantity: parseFloat(data.q),
+        time: data.T,
+        isBuyer: data.m
+    }));
+}

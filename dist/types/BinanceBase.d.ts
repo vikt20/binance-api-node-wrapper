@@ -144,8 +144,22 @@ export type StaticDepth = {
     asks: Array<[string, string]>;
     bids: Array<[string, string]>;
 };
+export type AggTradesData = {
+    symbol: string;
+    id: number;
+    price: number;
+    quantity: number;
+    time: number;
+    isBuyer: boolean;
+};
 export type GetStaticDepthParams = {
     symbol: string;
+    limit?: number;
+};
+export type GetAggTradesParams = {
+    symbol: string;
+    startTime?: number;
+    endTime?: number;
     limit?: number;
 };
 export type CancelOrderByIdParams = {

@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { OrderData, PositionData } from "./BinanceBase.js";
 import BinanceFutures from "./BinanceFutures.js";
 import { UserData as WebSocketUserData } from "./BinanceStreams.js";

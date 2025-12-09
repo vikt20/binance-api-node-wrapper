@@ -61,7 +61,7 @@ export type OrderType = 'LIMIT' | 'MARKET' | 'STOP' | 'TAKE_PROFIT' | 'STOP_MARK
 export type OrderSide = 'BUY' | 'SELL';
 export type OrderWorkingType = 'CONTRACT_PRICE' | 'MARK_PRICE';
 export type PositionDirection = "LONG" | "SHORT";
-export type OrderStatus = "NEW" | "PARTIALLY_FILLED" | "FILLED" | "CANCELED" | "PENDING_CANCEL" | "REJECTED" | "EXPIRED" | "PENDING";
+export type OrderStatus = "NEW" | "PARTIALLY_FILLED" | "FILLED" | "CANCELED" | "PENDING_CANCEL" | "REJECTED" | "EXPIRED" | "PENDING" | "TRIGGERED";
 export type TimeInForce = 'GTC' | 'IOC' | 'FOK' | 'GTX';
 export type PositionSide = 'BOTH' | 'LONG' | 'SHORT';
 export type AccountData = {
@@ -112,6 +112,7 @@ export type OrderData = {
     activationPrice: string;
     callbackRate: string;
     realizedProfit: string;
+    isAlgoOrder: boolean;
 };
 export type OrderRequestResponse = {
     orderId: number;
@@ -139,6 +140,74 @@ export type OrderRequestResponse = {
     time: number;
     updateTime: number;
 };
+/**
+ * Response Example
+
+{
+   "algoId": 2146760,
+   "clientAlgoId": "6B2I9XVcJpCjqPAJ4YoFX7",
+   "algoType": "CONDITIONAL",
+   "orderType": "TAKE_PROFIT",
+   "symbol": "BNBUSDT",
+   "side": "SELL",
+   "positionSide": "BOTH",
+   "timeInForce": "GTC",
+   "quantity": "0.01",
+   "algoStatus": "CANCELED",
+   "actualOrderId": "",
+   "actualPrice": "0.00000",
+   "triggerPrice": "750.000",
+   "price": "750.000",
+   "icebergQuantity": null,
+   "tpTriggerPrice": "0.000",
+   "tpPrice": "0.000",
+   "slTriggerPrice": "0.000",
+   "slPrice": "0.000",
+   "tpOrderType": "",
+   "selfTradePreventionMode": "EXPIRE_MAKER",
+   "workingType": "CONTRACT_PRICE",
+   "priceMatch": "NONE",
+   "closePosition": false,
+   "priceProtect": false,
+   "reduceOnly": false,
+   "createTime": 1750485492076,
+   "updateTime": 1750514545091,
+   "triggerTime": 0,
+   "goodTillDate": 0
+}
+ */
+export type AlgoOrderResponse = {
+    algoId: number;
+    clientAlgoId: string;
+    algoType: 'CONDITIONAL';
+    orderType: OrderType;
+    symbol: string;
+    side: OrderSide;
+    positionSide: PositionSide;
+    timeInForce: TimeInForce;
+    quantity: string;
+    algoStatus: OrderStatus;
+    actualOrderId: string;
+    actualPrice: string;
+    triggerPrice: string;
+    price: string;
+    icebergQuantity: string;
+    tpTriggerPrice: string;
+    tpPrice: string;
+    slTriggerPrice: string;
+    slPrice: string;
+    tpOrderType: string;
+    selfTradePreventionMode: string;
+    workingType: OrderWorkingType;
+    priceMatch: string;
+    closePosition: boolean;
+    priceProtect: boolean;
+    reduceOnly: boolean;
+    createTime: number;
+    updateTime: number;
+    triggerTime: number;
+    goodTillDate: number;
+};
 export type StaticDepth = {
     lastUpdateId: number;
     asks: Array<[string, string]>;
@@ -165,6 +234,7 @@ export type GetAggTradesParams = {
 export type CancelOrderByIdParams = {
     symbol: string;
     clientOrderId: string;
+    isAlgoOrder?: boolean;
 };
 export type MarketOrderParams = {
     symbol: string;

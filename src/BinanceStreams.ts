@@ -6,7 +6,7 @@ import ws from 'ws';
 
 export type UserDataWebSocket = {
     e: UserData['event'],
-    o?: OrderDataWebSocket
+    o?: OrderDataWebSocket | AlgoOrderDataWebSocket
     a?: AccountDataWebSocket
 }
 
@@ -67,6 +67,73 @@ export type OrderDataWebSocket = {
     cr: string
 }
 
+/**
+ * {
+  "e":"ALGO_UPDATE",  // Event Type
+  "T":1750515742297,  // Event Time
+  "E":1750515742303,  // Transaction Time
+  "o":{
+    "caid":"Q5xaq5EGKgXXa0fD7fs0Ip",  // Client Algo Id
+    "aid":2148719,  // Algo Id
+    "at":"CONDITIONAL",  // Algo Type
+    "o":"TAKE_PROFIT",  //Order Type
+    "s":"BNBUSDT",  //Symbol
+    "S":"SELL",  //Side
+    "ps":"BOTH",  //Position Side
+    "f":"GTC",  //Time in force
+    "q":"0.01",  //quantity
+    "X":"CANCELED",  //Algo status
+    "ai":"",  // order id
+    "ap": "0.00000", // avg fill price in matching engine, only display when order is triggered and placed in matching engine
+    "aq": "0.00000", // execuated quantity in matching engine, only display when order is triggered and placed in matching engine
+    "act": "0", // actual order type in matching engine, only display when order is triggered and placed in matching engine
+    "tp":"750",  //Trigger price
+    "p":"750", //Order Price
+    "V":"EXPIRE_MAKER",  //STP mode
+    "wt":"CONTRACT_PRICE", //Working type
+    "pm":"NONE",  // Price match mode
+    "cp":false,  //If Close-All
+    "pP":false, //If price protection is turned on
+    "R":false,  // Is this reduce only
+    "tt":0,  //Trigger time
+    "gtd":0,  // good till time for GTD time in force
+    "rm": "Reduce Only reject"  // algo order failed reason
+  }
+}
+ */
+export type AlgoOrderDataWebSocket = {
+    e: string,
+    T: number,
+    E: number,
+    o: {
+        caid: string,
+        aid: number,
+        at: string,
+        o: string,
+        s: string,
+        S: string,
+        ps: string,
+        f: string,
+        q: string,
+        X: OrderStatus,
+        ai: string,
+        ap: string,
+        aq: string,
+        act: string,
+        tp: string,
+        p: string,
+        V: string,
+        wt: string,
+        pm: string,
+        cp: boolean,
+        pP: boolean,
+        R: boolean,
+        tt: number,
+        gtd: number,
+        rm: string
+    }
+}
+
 export type BookTickerDataWebSocket = {
     stream: string;
     data: {
@@ -123,7 +190,7 @@ export type DepthDataWebSocket = {
 };
 
 export type UserData = {
-    event: "ACCOUNT_UPDATE" | "ORDER_TRADE_UPDATE",
+    event: "ACCOUNT_UPDATE" | "ORDER_TRADE_UPDATE" | "ALGO_UPDATE",
     accountData: AccountData | undefined
     orderData: OrderData | undefined
 }

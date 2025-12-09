@@ -13,6 +13,7 @@ type OrderInput = {
     workingType?: OrderWorkingType;
     callbackRate?: number;
     activationPrice?: number;
+    algoType?: 'CONDITIONAL';
 };
 export type OrderRequestResponse = {
     orderId: number;
@@ -164,11 +165,10 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
     getOpenPositionBySymbol(params: {
         symbol: string;
     }): Promise<FormattedResponse<PositionData>>;
-    getOpenOrders(): Promise<FormattedResponse<OrderData[]>>;
+    getOpenOrders(symbol?: string): Promise<FormattedResponse<OrderData[]>>;
     getOpenOrdersBySymbol(params: GetOpenOrdersBySymbolParams): Promise<FormattedResponse<OrderData[]>>;
     cancelAllOpenOrders(params: CancelAllOpenOrdersParams): Promise<FormattedResponse<any>>;
     cancelOrderById(params: CancelOrderByIdParams): Promise<FormattedResponse<any>>;
-    trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     marketBuy(params: MarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     marketSell(params: MarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     limitBuy(params: LimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
@@ -177,6 +177,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
     reduceLimitOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     stopLimitOrder(params: StopLimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     customOrder(orderInput: OrderInput): Promise<FormattedResponse<OrderRequestResponse>>;
 }
 export {};

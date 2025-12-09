@@ -1,5 +1,5 @@
 import BinanceStreams, { KlineData } from './BinanceStreams.js';
-import { convertPositionDataByRequest, convertOrderDataRequestResponse, extractInfo, convertKlinesDataByRequest, convertAggTradesDataByRequest } from './converters.js';
+import { convertPositionDataByRequest, convertOrderDataRequestResponse, extractInfo, convertKlinesDataByRequest, convertAggTradesDataByRequest, convertAlgoOrderByRequest } from './converters.js';
 
 import {
     FormattedResponse, ListenKey, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderSide, OrderType, TimeInForce, OrderWorkingType, OrderStatus, PositionDirection, PositionSide, GetOpenOrdersBySymbolParams,
@@ -13,7 +13,8 @@ import {
     ExtractedInfo,
     ExchangeInfo,
     GetAggTradesParams,
-    AggTradesData
+    AggTradesData,
+    AlgoOrderResponse
 } from './BinanceBase.js';
 
 type OrderInput = {
@@ -29,6 +30,7 @@ type OrderInput = {
     workingType?: OrderWorkingType;
     callbackRate?: number;
     activationPrice?: number;
+    algoType?: 'CONDITIONAL';
 }
 
 
@@ -219,39 +221,68 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
         if (typeof position === 'undefined') return this.formattedResponse({ errors: 'Position not found' });
         return this.formattedResponse({ data: position });
     }
-    async getOpenOrders(): Promise<FormattedResponse<OrderData[]>> {
-        const request = await this.signedRequest('futures', 'GET', '/fapi/v1/openOrders') as FormattedResponse<OrderRequestResponse[]>;
-        if (request.success && request.data !== undefined) {
-            return this.formattedResponse({ data: request.data.map(convertOrderDataRequestResponse) });
-        } else {
-            return this.formattedResponse({ errors: request.errors });
+    async getOpenOrders(symbol?: string): Promise<FormattedResponse<OrderData[]>> {
+        const query = symbol ? { symbol } : {};
+
+        const [regularRes, algoRes] = await Promise.all([
+            this.signedRequest('futures', 'GET', '/fapi/v1/openOrders', query),
+            this.signedRequest('futures', 'GET', '/fapi/v1/openAlgoOrders', query)  // correct endpoint
+        ]).catch(err => {
+            const msg = err || 'Network error';
+            return [
+                { success: false, errors: msg },
+                { success: false, errors: msg }
+            ] as const;
+        });
+
+        // If any error, return it
+        if (regularRes.errors || algoRes.errors) return this.formattedResponse({ errors: regularRes.errors || algoRes.errors });
+
+        const orders: OrderData[] = [];
+        const errorMessages: string[] = [];
+
+        // Regular orders
+        if (regularRes.success && regularRes.data) {
+            orders.push(...regularRes.data.map(convertOrderDataRequestResponse));
+        } else if (regularRes.errors?.length) {
+            errorMessages.push(regularRes.errors);
         }
+
+        // Algo orders
+        if (algoRes.success && algoRes.data) {
+            orders.push(...algoRes.data.map(convertAlgoOrderByRequest));
+        } else if (algoRes.errors?.length) {
+            errorMessages.push(algoRes.errors);
+        }
+
+        // Success if we got any orders, even with partial errors
+
+        return this.formattedResponse({
+            data: orders,
+            errors: errorMessages.length > 0 ? errorMessages.join('; ') : undefined
+        });
     }
     async getOpenOrdersBySymbol(params: GetOpenOrdersBySymbolParams): Promise<FormattedResponse<OrderData[]>> {
-        const request = await this.signedRequest('futures', 'GET', '/fapi/v1/openOrders', { symbol: params.symbol }) as FormattedResponse<OrderRequestResponse[]>;
-        if (request.success && request.data !== undefined) {
-            return this.formattedResponse({ data: request.data.map(convertOrderDataRequestResponse) });
-        } else {
-            return this.formattedResponse({ errors: request.errors });
-        }
+        return await this.getOpenOrders(params.symbol);
     }
     async cancelAllOpenOrders(params: CancelAllOpenOrdersParams): Promise<FormattedResponse<any>> {
-        return await this.signedRequest('futures', 'DELETE', '/fapi/v1/allOpenOrders', { symbol: params.symbol });
+        const requestReg = this.signedRequest('futures', 'DELETE', '/fapi/v1/allOpenOrders', { symbol: params.symbol }) as Promise<FormattedResponse<any>>;
+        const requestAlgo = this.signedRequest('futures', 'DELETE', '/fapi/v1/algoOpenOrders', { symbol: params.symbol }) as Promise<FormattedResponse<any>>;
+        const [regularRes, algoRes] = await Promise.all([requestReg, requestAlgo]);
+
+        if (regularRes.success && algoRes.success) {
+            return this.formattedResponse({ data: { regular: regularRes.data, algo: algoRes.data } });
+        } else {
+            return this.formattedResponse({ errors: JSON.stringify([regularRes.errors, algoRes.errors]) });
+        }
     }
     async cancelOrderById(params: CancelOrderByIdParams): Promise<FormattedResponse<any>> {
+        if (params.isAlgoOrder) {
+            return await this.signedRequest('futures', 'DELETE', '/fapi/v1/algoOrder', { symbol: params.symbol, clientalgoid: params.clientOrderId });
+        }
         return await this.signedRequest('futures', 'DELETE', '/fapi/v1/order', { symbol: params.symbol, origClientOrderId: params.clientOrderId });
     }
-    async trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
-        return this.customOrder({
-            symbol: params.symbol,
-            side: params.side,
-            type: 'TRAILING_STOP_MARKET',
-            quantity: params.quantity,
-            callbackRate: params.callbackRate,
-            activationPrice: params.activationPrice,
-            reduceOnly: true
-        })
-    }
+
     async marketBuy(params: MarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
         return this.customOrder({
             symbol: params.symbol,
@@ -294,6 +325,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
     }
     async stopOrder(params: StopOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
         return this.customOrder({
+            algoType: 'CONDITIONAL',
             symbol: params.symbol,
             side: params.side,
             type: params.type,
@@ -304,6 +336,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
     }
     async reduceLimitOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
         return this.customOrder({
+            algoType: 'CONDITIONAL',
             symbol: params.symbol,
             side: params.side,
             type: 'LIMIT',
@@ -316,6 +349,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
     }
     async stopLimitOrder(params: StopLimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
         return this.customOrder({
+            algoType: 'CONDITIONAL',
             symbol: params.symbol,
             side: params.side,
             type: 'STOP',
@@ -328,6 +362,18 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
         if (params.positionDirection === 'LONG') return await this.marketSell({ symbol: params.symbol, quantity: params.quantity, reduceOnly: true });
         else if (params.positionDirection === 'SHORT') return await this.marketBuy({ symbol: params.symbol, quantity: params.quantity, reduceOnly: true });
         else return this.formattedResponse({ errors: 'Invalid position direction' });
+    }
+    async trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
+        return this.customOrder({
+            algoType: 'CONDITIONAL',
+            symbol: params.symbol,
+            side: params.side,
+            type: 'TRAILING_STOP_MARKET',
+            quantity: params.quantity,
+            callbackRate: params.callbackRate,
+            activationPrice: params.activationPrice,
+            reduceOnly: true
+        })
     }
 
 
@@ -345,7 +391,8 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
             reduceOnly = undefined,
             workingType = 'CONTRACT_PRICE',
             callbackRate = undefined, //used with trailing
-            activationPrice = undefined //used with trailing
+            activationPrice = undefined, //used with trailing
+            algoType = undefined //used with trailing
         } = orderInput
 
         const timestamp = Date.now();
@@ -364,10 +411,12 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
             recWindow: this.recvWindow,
             newOrderResponseType: 'RESULT',
             callbackRate,
-            activationPrice
+            activationPrice,
+            algoType
         }
         Object.keys(params).forEach(key => params[key] === undefined && delete params[key])
-        return await this.signedRequest('futures', 'POST', '/fapi/v1/order', params);
+        if (algoType) return await this.signedRequest('futures', 'POST', '/fapi/v1/algoOrder', params);
+        else return await this.signedRequest('futures', 'POST', '/fapi/v1/order', params);
     }
 
 

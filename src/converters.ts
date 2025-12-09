@@ -1,5 +1,5 @@
-import { ExchangeInfo, ExtractedInfo, AccountData, OrderData, OrderRequestResponse, PositionData, PositionDirection, AggTradesData } from './BinanceBase.js';
-import { TradeData, TradeDataWebSocket, DepthData, KlineData, UserData, DepthDataWebSocket, KlineDataWebSocket, UserDataWebSocket, AccountDataWebSocket, OrderDataWebSocket, BookTickerDataWebSocket, BookTickerData } from './BinanceStreams.js';
+import { ExchangeInfo, ExtractedInfo, AccountData, OrderData, OrderRequestResponse, PositionData, PositionDirection, AggTradesData, AlgoOrderResponse, OrderSide, OrderType, TimeInForce, OrderStatus, OrderWorkingType, PositionSide } from './BinanceBase.js';
+import { TradeData, TradeDataWebSocket, DepthData, KlineData, UserData, DepthDataWebSocket, KlineDataWebSocket, UserDataWebSocket, AccountDataWebSocket, OrderDataWebSocket, BookTickerDataWebSocket, BookTickerData, AlgoOrderDataWebSocket } from './BinanceStreams.js';
 import { AggTradesDataByRequest, KlineDataByRequest, PositionDataByRequest } from './BinanceFutures.js';
 
 export function convertObjectIntoUrlEncoded(obj: any) {
@@ -69,7 +69,9 @@ export function convertUserData(rawData: UserDataWebSocket): UserData {
     if (e === "ACCOUNT_UPDATE") {
         return { event: e, orderData: undefined, accountData: convertAccountDataWebSocketRaw(a!) };
     } else if (e === "ORDER_TRADE_UPDATE") {
-        return { event: e, accountData: undefined, orderData: convertOrderDataWebSocket(o!) };
+        return { event: e, accountData: undefined, orderData: convertOrderDataWebSocket(o as OrderDataWebSocket) };
+    } else if (e === "ALGO_UPDATE") {
+        return { event: e, accountData: undefined, orderData: convertAlgoOrderDataWebSocket(o as AlgoOrderDataWebSocket) };
     } else {
         return { event: e, accountData: undefined, orderData: undefined };
     }
@@ -160,7 +162,75 @@ export function convertOrderDataWebSocket(rawData: OrderDataWebSocket): OrderDat
         closeAll,
         activationPrice,
         callbackRate,
-        realizedProfit
+        realizedProfit,
+        isAlgoOrder: false
+    };
+}
+
+export function convertAlgoOrderDataWebSocket(rawData: AlgoOrderDataWebSocket): OrderData {
+    let {
+        T: eventTime,
+        o: {
+            caid: clientAlgoId,
+            aid: algoId,
+            at: algoType,
+            o: orderType,
+            s: symbol,
+            S: side,
+            ps: positionSide,
+            f: timeInForce,
+            q: quantity,
+            X: algoStatus,
+            ai: actualOrderId,
+            ap: avgPrice,
+            aq: executedQty,
+            act: actualOrderType,
+            tp: triggerPrice,
+            p: price,
+            V: stpMode,
+            wt: workingType,
+            pm: priceMatch,
+            cp: closePosition,
+            pP: priceProtect,
+            R: reduceOnly,
+            tt: triggerTime,
+            gtd: goodTillDate,
+            rm: rejectReason
+        }
+    } = rawData;
+
+    return {
+        symbol,
+        clientOrderId: clientAlgoId,
+        side: side as OrderSide,
+        orderType: orderType as OrderType,
+        timeInForce: timeInForce as TimeInForce,
+        originalQuantity: parseFloat(quantity),
+        originalPrice: parseFloat(price),
+        averagePrice: parseFloat(avgPrice),
+        stopPrice: parseFloat(triggerPrice),
+        executionType: algoStatus,
+        orderStatus: algoStatus as OrderStatus,
+        orderId: algoId,
+        orderLastFilledQuantity: parseFloat(executedQty),
+        orderFilledAccumulatedQuantity: parseFloat(executedQty),
+        lastFilledPrice: parseFloat(avgPrice),
+        commissionAsset: '',
+        commission: '',
+        orderTradeTime: eventTime,
+        tradeId: 0,
+        bidsNotional: '',
+        askNotional: '',
+        isMakerSide: false,
+        isReduceOnly: reduceOnly,
+        workingType: workingType as OrderWorkingType,
+        originalOrderType: orderType as OrderType,
+        positionSide: positionSide as PositionSide,
+        closeAll: closePosition,
+        activationPrice: '',
+        callbackRate: '',
+        realizedProfit: '',
+        isAlgoOrder: true
     };
 }
 
@@ -218,7 +288,8 @@ export function convertOrderDataRequestResponse(rawData: OrderRequestResponse): 
         closeAll: closePosition,
         activationPrice: '',
         callbackRate: '',
-        realizedProfit: ''
+        realizedProfit: '',
+        isAlgoOrder: false
     };
 }
 
@@ -269,4 +340,58 @@ export function convertAggTradesDataByRequest(rawData: AggTradesDataByRequest[],
         time: data.T,
         isBuyer: data.m
     }));
+}
+
+
+export function convertAlgoOrderByRequest(rawData: AlgoOrderResponse): OrderData {
+    let {
+        algoId,
+        clientAlgoId,
+        orderType,
+        symbol,
+        side,
+        positionSide,
+        timeInForce,
+        quantity,
+        algoStatus,
+        actualPrice,
+        price,
+        triggerPrice,
+        workingType,
+        closePosition,
+        reduceOnly,
+        createTime,
+        updateTime
+    } = rawData;
+    return {
+        symbol,
+        clientOrderId: clientAlgoId,
+        side: side,
+        orderType: orderType,
+        timeInForce: timeInForce,
+        originalQuantity: parseFloat(quantity),
+        originalPrice: parseFloat(price),
+        averagePrice: parseFloat(actualPrice),
+        stopPrice: parseFloat(triggerPrice),
+        executionType: algoStatus,
+        orderStatus: algoStatus,
+        orderId: algoId,
+        orderLastFilledQuantity: 0,
+        orderFilledAccumulatedQuantity: 0,
+        lastFilledPrice: parseFloat(actualPrice),
+        commissionAsset: '',
+        commission: '',
+        orderTradeTime: createTime,
+        tradeId: 0,
+        isMakerSide: false,
+        isReduceOnly: reduceOnly,
+        workingType: workingType,
+        originalOrderType: orderType,
+        positionSide: positionSide,
+        closeAll: closePosition,
+        activationPrice: '',
+        callbackRate: '',
+        realizedProfit: '',
+        isAlgoOrder: true
+    };
 }

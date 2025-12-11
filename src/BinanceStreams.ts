@@ -268,7 +268,7 @@ export default class BinanceStreams extends BinanceBase {
             });
             //onping
             webSocket.on('ping', (data: any) => {
-                console.log(`${title} - PING RECEIVED`);
+                // console.log(`${title} - PING RECEIVED`);
                 webSocket.pong(data);
             });
             webSocket.on('pong', (data: any) => {
@@ -277,13 +277,13 @@ export default class BinanceStreams extends BinanceBase {
             });
             //onclose
             webSocket.on('close', () => {
-                console.log(`${title} - CLOSED`);
+                // console.log(`${title} - CLOSED`);
                 if (statusCallback) statusCallback('CLOSE');
                 if (isKeepAlive) reconnect();
             });
             //onopen
             webSocket.on('open', () => {
-                console.log(`${title} - OPEN`);
+                // console.log(`${title} - OPEN`);
                 if (statusCallback) statusCallback('OPEN');
                 resolve({ disconnect, id })
             });

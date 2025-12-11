@@ -175,17 +175,32 @@ export default class BinanceFutures extends BinanceStreams {
             side: params.side,
             type: params.type,
             stopPrice: params.price,
+            triggerPrice: params.price,
             closePosition: true,
             workingType: params.workingType,
         });
     }
     async reduceLimitOrder(params) {
         return this.customOrder({
-            algoType: 'CONDITIONAL',
+            // algoType: 'CONDITIONAL',
             symbol: params.symbol,
             side: params.side,
             type: 'LIMIT',
             price: params.price,
+            quantity: params.quantity,
+            reduceOnly: true,
+            timeInForce: 'GTC',
+            workingType: params.workingType,
+        });
+    }
+    async reduceStopOrder(params) {
+        return this.customOrder({
+            algoType: 'CONDITIONAL',
+            symbol: params.symbol,
+            side: params.side,
+            type: 'STOP_MARKET',
+            triggerPrice: params.price,
+            stopPrice: params.price,
             quantity: params.quantity,
             reduceOnly: true,
             timeInForce: 'GTC',
@@ -199,8 +214,10 @@ export default class BinanceFutures extends BinanceStreams {
             side: params.side,
             type: 'STOP',
             quantity: params.quantity,
-            stopPrice: params.price,
+            triggerPrice: params.price,
             price: params.price,
+            reduceOnly: true,
+            timeInForce: 'GTC'
         });
     }
     async reducePosition(params) {
@@ -224,7 +241,7 @@ export default class BinanceFutures extends BinanceStreams {
         });
     }
     async customOrder(orderInput) {
-        const { symbol, side, type, quantity = undefined, price = undefined, 
+        const { symbol, side, type, quantity = undefined, price = undefined, triggerPrice = undefined, 
         // timeInForce = orderInput.reduceOnly ? undefined : 'GTC',
         timeInForce = undefined, stopPrice = undefined, //used with STOP_MARKET or TAKE_PROFIT_MARKET
         closePosition = false, //used with STOP_MARKET or TAKE_PROFIT_MARKET
@@ -240,6 +257,7 @@ export default class BinanceFutures extends BinanceStreams {
             timeInForce,
             quantity,
             price,
+            triggerPrice,
             stopPrice,
             closePosition,
             reduceOnly,

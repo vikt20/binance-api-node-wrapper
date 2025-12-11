@@ -6,6 +6,7 @@ type OrderInput = {
     type: OrderType;
     quantity?: number;
     price?: number;
+    triggerPrice?: number;
     timeInForce?: TimeInForce;
     stopPrice?: number;
     closePosition?: boolean;
@@ -175,6 +176,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
     limitSell(params: LimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     stopOrder(params: StopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reduceLimitOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    reduceStopOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     stopLimitOrder(params: StopLimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>>;
     trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;

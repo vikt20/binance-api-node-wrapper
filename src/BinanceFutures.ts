@@ -23,6 +23,7 @@ type OrderInput = {
     type: OrderType;
     quantity?: number;
     price?: number;
+    triggerPrice?: number;
     timeInForce?: TimeInForce;
     stopPrice?: number;
     closePosition?: boolean;
@@ -330,17 +331,32 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
             side: params.side,
             type: params.type,
             stopPrice: params.price,
+            triggerPrice: params.price,
             closePosition: true,
             workingType: params.workingType,
         })
     }
     async reduceLimitOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
         return this.customOrder({
-            algoType: 'CONDITIONAL',
+            // algoType: 'CONDITIONAL',
             symbol: params.symbol,
             side: params.side,
             type: 'LIMIT',
             price: params.price,
+            quantity: params.quantity,
+            reduceOnly: true,
+            timeInForce: 'GTC',
+            workingType: params.workingType,
+        })
+    }
+    async reduceStopOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
+        return this.customOrder({
+            algoType: 'CONDITIONAL',
+            symbol: params.symbol,
+            side: params.side,
+            type: 'STOP_MARKET',
+            triggerPrice: params.price,
+            stopPrice: params.price,
             quantity: params.quantity,
             reduceOnly: true,
             timeInForce: 'GTC',
@@ -354,8 +370,10 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
             side: params.side,
             type: 'STOP',
             quantity: params.quantity,
-            stopPrice: params.price,
+            triggerPrice: params.price,
             price: params.price,
+            reduceOnly: true,
+            timeInForce: 'GTC'
         })
     }
     async reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>> {
@@ -384,6 +402,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
             type,
             quantity = undefined,
             price = undefined,
+            triggerPrice = undefined,
             // timeInForce = orderInput.reduceOnly ? undefined : 'GTC',
             timeInForce = undefined,
             stopPrice = undefined, //used with STOP_MARKET or TAKE_PROFIT_MARKET
@@ -403,6 +422,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
             timeInForce,
             quantity,
             price,
+            triggerPrice,
             stopPrice,
             closePosition,
             reduceOnly,

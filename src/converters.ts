@@ -66,6 +66,7 @@ export function convertKlineData(inputData: KlineDataWebSocket): KlineData {
 
 export function convertUserData(rawData: UserDataWebSocket): UserData {
     let { e, o, a } = rawData;
+    // console.log(rawData)
     if (e === "ACCOUNT_UPDATE") {
         return { event: e, orderData: undefined, accountData: convertAccountDataWebSocketRaw(a!) };
     } else if (e === "ORDER_TRADE_UPDATE") {
@@ -168,38 +169,36 @@ export function convertOrderDataWebSocket(rawData: OrderDataWebSocket): OrderDat
 }
 
 export function convertAlgoOrderDataWebSocket(rawData: AlgoOrderDataWebSocket): OrderData {
+    // console.log(`convertAlgoOrderDataWebSocket:`, rawData)
     let {
-        T: eventTime,
-        o: {
-            caid: clientAlgoId,
-            aid: algoId,
-            at: algoType,
-            o: orderType,
-            s: symbol,
-            S: side,
-            ps: positionSide,
-            f: timeInForce,
-            q: quantity,
-            X: algoStatus,
-            ai: actualOrderId,
-            ap: avgPrice,
-            aq: executedQty,
-            act: actualOrderType,
-            tp: triggerPrice,
-            p: price,
-            V: stpMode,
-            wt: workingType,
-            pm: priceMatch,
-            cp: closePosition,
-            pP: priceProtect,
-            R: reduceOnly,
-            tt: triggerTime,
-            gtd: goodTillDate,
-            rm: rejectReason
-        }
-    } = rawData;
+        caid: clientAlgoId,
+        aid: algoId,
+        at: algoType,
+        o: orderType,
+        s: symbol,
+        S: side,
+        ps: positionSide,
+        f: timeInForce,
+        q: quantity,
+        X: algoStatus,
+        ai: actualOrderId,
+        ap: avgPrice,
+        aq: executedQty,
+        act: actualOrderType,
+        tp: triggerPrice,
+        p: price,
+        V: stpMode,
+        wt: workingType,
+        pm: priceMatch,
+        cp: closePosition,
+        pP: priceProtect,
+        R: reduceOnly,
+        tt: triggerTime,
+        gtd: goodTillDate,
+        rm: rejectReason
+    } = rawData
 
-    return {
+    const res = {
         symbol,
         clientOrderId: clientAlgoId,
         side: side as OrderSide,
@@ -217,7 +216,7 @@ export function convertAlgoOrderDataWebSocket(rawData: AlgoOrderDataWebSocket): 
         lastFilledPrice: parseFloat(avgPrice),
         commissionAsset: '',
         commission: '',
-        orderTradeTime: eventTime,
+        orderTradeTime: triggerTime,
         tradeId: 0,
         bidsNotional: '',
         askNotional: '',
@@ -232,6 +231,8 @@ export function convertAlgoOrderDataWebSocket(rawData: AlgoOrderDataWebSocket): 
         realizedProfit: '',
         isAlgoOrder: true
     };
+    // console.log(res)
+    return res;
 }
 
 export function convertOrderDataRequestResponse(rawData: OrderRequestResponse): OrderData {

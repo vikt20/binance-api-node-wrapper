@@ -1,4 +1,4 @@
-import { FormattedResponse, GetStaticDepthParams, StaticDepth, ExtractedInfo, ExchangeInfo, AccountData, OrderData, OrderRequestResponse, OrderSide, OrderType, TimeInForce, OrderWorkingType, OrderStatus, PositionDirection, PositionSide, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, StopLimitOrderParams, ReducePositionParams } from "./BinanceBase.js";
+import { FormattedResponse, GetStaticDepthParams, StaticDepth, ExtractedInfo, ExchangeInfo, AccountData, OrderData, OrderRequestResponse, OrderSide, OrderType, TimeInForce, OrderWorkingType, OrderStatus, PositionDirection, PositionSide, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, ReducePositionParams, StopMarketOrderParams } from "./BinanceBase.js";
 import { IBinanceClass, KlineDataByRequest } from "./BinanceFutures.js";
 import BinanceStreams, { KlineData } from "./BinanceStreams.js";
 import { convertKlinesDataByRequest, convertOrderDataRequestResponse, extractInfo } from "./converters.js";
@@ -131,7 +131,7 @@ export default class BinanceSpot extends BinanceStreams implements IBinanceClass
         return this.formattedResponse({ errors: 'Not applicable for spot trading' });
     }
 
-    async stopLimitOrder(params: StopLimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
+    async stopMarketOrder(params: StopMarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
         // Not applicable for spot trading
         return this.formattedResponse({ errors: 'Not applicable for spot trading' });
     }

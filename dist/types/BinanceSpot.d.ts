@@ -1,4 +1,4 @@
-import { FormattedResponse, GetStaticDepthParams, StaticDepth, ExchangeInfo, AccountData, OrderData, OrderRequestResponse, OrderSide, OrderType, TimeInForce, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, StopLimitOrderParams, ReducePositionParams } from "./BinanceBase.js";
+import { FormattedResponse, GetStaticDepthParams, StaticDepth, ExchangeInfo, AccountData, OrderData, OrderRequestResponse, OrderSide, OrderType, TimeInForce, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, ReducePositionParams, StopMarketOrderParams } from "./BinanceBase.js";
 import { IBinanceClass } from "./BinanceFutures.js";
 import BinanceStreams, { KlineData } from "./BinanceStreams.js";
 export default class BinanceSpot extends BinanceStreams implements IBinanceClass {
@@ -32,7 +32,7 @@ export default class BinanceSpot extends BinanceStreams implements IBinanceClass
     limitSell(params: LimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     stopOrder(params: StopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reduceLimitOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
-    stopLimitOrder(params: StopLimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    stopMarketOrder(params: StopMarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>>;
     customOrder(orderInput: {
         symbol: string;

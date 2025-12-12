@@ -1,5 +1,5 @@
 import BinanceStreams, { KlineData } from './BinanceStreams.js';
-import { FormattedResponse, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderSide, OrderType, TimeInForce, OrderWorkingType, OrderStatus, PositionSide, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, StopLimitOrderParams, ReducePositionParams, ExchangeInfo, GetAggTradesParams, AggTradesData } from './BinanceBase.js';
+import { FormattedResponse, GetStaticDepthParams, StaticDepth, AccountData, OrderData, OrderSide, OrderType, TimeInForce, OrderWorkingType, OrderStatus, PositionSide, GetOpenOrdersBySymbolParams, CancelAllOpenOrdersParams, CancelOrderByIdParams, MarketOrderParams, TrailingStopOrderParams, LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams, ReducePositionParams, ExchangeInfo, GetAggTradesParams, AggTradesData, StopMarketOrderParams } from './BinanceBase.js';
 type OrderInput = {
     symbol: string;
     side: OrderSide;
@@ -136,7 +136,7 @@ export interface IBinanceClass {
     limitSell(params: LimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     stopOrder(params: StopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reduceLimitOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
-    stopLimitOrder(params: StopLimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    stopMarketOrder(params: StopMarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>>;
     customOrder(orderInput: OrderInput): Promise<FormattedResponse<OrderRequestResponse>>;
 }
@@ -177,7 +177,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
     stopOrder(params: StopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reduceLimitOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reduceStopOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
-    stopLimitOrder(params: StopLimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    stopMarketOrder(params: StopMarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>>;
     trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     customOrder(orderInput: OrderInput): Promise<FormattedResponse<OrderRequestResponse>>;

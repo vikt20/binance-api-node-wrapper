@@ -182,7 +182,6 @@ export default class BinanceFutures extends BinanceStreams {
     }
     async reduceLimitOrder(params) {
         return this.customOrder({
-            // algoType: 'CONDITIONAL',
             symbol: params.symbol,
             side: params.side,
             type: 'LIMIT',
@@ -207,16 +206,15 @@ export default class BinanceFutures extends BinanceStreams {
             workingType: params.workingType,
         });
     }
-    async stopLimitOrder(params) {
+    async stopMarketOrder(params) {
         return this.customOrder({
             algoType: 'CONDITIONAL',
             symbol: params.symbol,
             side: params.side,
-            type: 'STOP',
+            type: 'STOP_MARKET',
             quantity: params.quantity,
             triggerPrice: params.price,
-            price: params.price,
-            reduceOnly: true,
+            stopPrice: params.price,
             timeInForce: 'GTC'
         });
     }

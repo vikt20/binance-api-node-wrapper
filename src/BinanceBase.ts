@@ -279,7 +279,7 @@ export type StopOrderParams = {
     type: OrderType,
     workingType?: OrderWorkingType,
 }
-export type StopLimitOrderParams = {
+export type StopMarketOrderParams = {
     symbol: string,
     price: number,
     quantity: number,

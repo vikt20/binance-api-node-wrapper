@@ -20,6 +20,7 @@ class BinanceUserData extends BinanceFutures {
                         data.accountData.positions.forEach(this.setPosition);
                     break;
                 case "ORDER_TRADE_UPDATE":
+                    console.log(data.orderData);
                     if (data.orderData)
                         this.setOrders(data.orderData);
                     break;

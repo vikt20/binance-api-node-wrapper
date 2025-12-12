@@ -112,7 +112,7 @@ export default class BinanceSpot extends BinanceStreams {
         // Not applicable for spot trading
         return this.formattedResponse({ errors: 'Not applicable for spot trading' });
     }
-    async stopLimitOrder(params) {
+    async stopMarketOrder(params) {
         // Not applicable for spot trading
         return this.formattedResponse({ errors: 'Not applicable for spot trading' });
     }

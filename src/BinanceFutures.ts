@@ -8,13 +8,13 @@ import {
     MarketOrderParams,
     TrailingStopOrderParams,
     LimitOrderParams, PositionData, StopOrderParams, ReduceOrderParams,
-    StopLimitOrderParams,
     ReducePositionParams,
     ExtractedInfo,
     ExchangeInfo,
     GetAggTradesParams,
     AggTradesData,
-    AlgoOrderResponse
+    AlgoOrderResponse,
+    StopMarketOrderParams
 } from './BinanceBase.js';
 
 type OrderInput = {
@@ -151,7 +151,7 @@ export interface IBinanceClass {
     limitSell(params: LimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     stopOrder(params: StopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reduceLimitOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
-    stopLimitOrder(params: StopLimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
+    stopMarketOrder(params: StopMarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>>;
     customOrder(orderInput: OrderInput): Promise<FormattedResponse<OrderRequestResponse>>;
 }
@@ -338,7 +338,6 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
     }
     async reduceLimitOrder(params: ReduceOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
         return this.customOrder({
-            // algoType: 'CONDITIONAL',
             symbol: params.symbol,
             side: params.side,
             type: 'LIMIT',
@@ -363,18 +362,17 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
             workingType: params.workingType,
         })
     }
-    async stopLimitOrder(params: StopLimitOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
+    async stopMarketOrder(params: StopMarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>> {
         return this.customOrder({
             algoType: 'CONDITIONAL',
             symbol: params.symbol,
             side: params.side,
-            type: 'STOP',
+            type: 'STOP_MARKET',
             quantity: params.quantity,
             triggerPrice: params.price,
-            price: params.price,
-            reduceOnly: true,
+            stopPrice: params.price,
             timeInForce: 'GTC'
-        })
+        });
     }
     async reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>> {
         if (params.positionDirection === 'LONG') return await this.marketSell({ symbol: params.symbol, quantity: params.quantity, reduceOnly: true });

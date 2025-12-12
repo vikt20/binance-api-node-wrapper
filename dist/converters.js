@@ -60,6 +60,7 @@ export function convertKlineData(inputData) {
 }
 export function convertUserData(rawData) {
     let { e, o, a } = rawData;
+    // console.log(rawData)
     if (e === "ACCOUNT_UPDATE") {
         return { event: e, orderData: undefined, accountData: convertAccountDataWebSocketRaw(a) };
     }
@@ -142,8 +143,9 @@ export function convertOrderDataWebSocket(rawData) {
     };
 }
 export function convertAlgoOrderDataWebSocket(rawData) {
-    let { T: eventTime, o: { caid: clientAlgoId, aid: algoId, at: algoType, o: orderType, s: symbol, S: side, ps: positionSide, f: timeInForce, q: quantity, X: algoStatus, ai: actualOrderId, ap: avgPrice, aq: executedQty, act: actualOrderType, tp: triggerPrice, p: price, V: stpMode, wt: workingType, pm: priceMatch, cp: closePosition, pP: priceProtect, R: reduceOnly, tt: triggerTime, gtd: goodTillDate, rm: rejectReason } } = rawData;
-    return {
+    // console.log(`convertAlgoOrderDataWebSocket:`, rawData)
+    let { caid: clientAlgoId, aid: algoId, at: algoType, o: orderType, s: symbol, S: side, ps: positionSide, f: timeInForce, q: quantity, X: algoStatus, ai: actualOrderId, ap: avgPrice, aq: executedQty, act: actualOrderType, tp: triggerPrice, p: price, V: stpMode, wt: workingType, pm: priceMatch, cp: closePosition, pP: priceProtect, R: reduceOnly, tt: triggerTime, gtd: goodTillDate, rm: rejectReason } = rawData;
+    const res = {
         symbol,
         clientOrderId: clientAlgoId,
         side: side,
@@ -161,7 +163,7 @@ export function convertAlgoOrderDataWebSocket(rawData) {
         lastFilledPrice: parseFloat(avgPrice),
         commissionAsset: '',
         commission: '',
-        orderTradeTime: eventTime,
+        orderTradeTime: triggerTime,
         tradeId: 0,
         bidsNotional: '',
         askNotional: '',
@@ -176,6 +178,8 @@ export function convertAlgoOrderDataWebSocket(rawData) {
         realizedProfit: '',
         isAlgoOrder: true
     };
+    // console.log(res)
+    return res;
 }
 export function convertOrderDataRequestResponse(rawData) {
     let { symbol, clientOrderId, side, type, timeInForce, origQty, price, avgPrice, stopPrice, status, orderId, executedQty, cumQuote, time, updateTime, reduceOnly, closePosition, positionSide, workingType, origType, priceMatch, selfTradePreventionMode, goodTillDate } = rawData;

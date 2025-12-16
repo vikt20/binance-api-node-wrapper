@@ -67,7 +67,7 @@ export type OrderType = 'LIMIT' | 'MARKET' | 'STOP' | 'TAKE_PROFIT' | 'STOP_MARK
 export type OrderSide = 'BUY' | 'SELL'
 export type OrderWorkingType = 'CONTRACT_PRICE' | 'MARK_PRICE'
 export type PositionDirection = "LONG" | "SHORT"
-export type OrderStatus = "NEW" | "PARTIALLY_FILLED" | "FILLED" | "CANCELED" | "PENDING_CANCEL" | "REJECTED" | "EXPIRED" | "PENDING" | "TRIGGERED"
+export type OrderStatus = "NEW" | "PARTIALLY_FILLED" | "FILLED" | "CANCELED" | "PENDING_CANCEL" | "REJECTED" | "EXPIRED" | "PENDING" | "TRIGGERED" | "FINISHED"
 export type TimeInForce = 'GTC' | 'IOC' | 'FOK' | 'GTX'
 export type PositionSide = 'BOTH' | 'LONG' | 'SHORT'
 

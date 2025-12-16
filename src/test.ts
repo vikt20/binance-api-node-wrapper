@@ -7,14 +7,16 @@ const BINANCE_APISECRET = "dWjPOQ09Y8F3lRrEVgyu5VK4sc3nDwy95geOr5gaJB7GSQfL8yjI8
 const binanceFutures = new BinanceFutures(BINANCE_APIKEY, BINANCE_APISECRET);
 const binanceUserData = new BinanceUserData(BINANCE_APIKEY, BINANCE_APISECRET);
 
-// await binanceUserData.init().then(() => {
-//     // BinanceUserData.Emitter.on(BinanceUserData.POSITION_EVENT, (symbol: string, position: PositionData) => {
-//     //     // console.log(symbol, position)
-//     // })
-//     BinanceUserData.Emitter.on(BinanceUserData.ORDER_EVENT, (symbol: string, order: OrderData[]) => {
-//         console.log(symbol, order)
-//     })
-// })
+await binanceUserData.init().then(() => {
+    // BinanceUserData.Emitter.on(BinanceUserData.POSITION_EVENT, (symbol: string, position: PositionData) => {
+    //     // console.log(symbol, position)
+    // })
+    BinanceUserData.Emitter.on(BinanceUserData.ORDER_EVENT, (symbol: string, order: OrderData[]) => {
+        console.log(symbol, order)
+    })
+})
+
+
 // binanceFutures.cancelOrderById({ clientOrderId: 'viyaoN96oNk67J5SQy8XL2', symbol: 'BTCUSDT', isAlgoOrder: true }).then(data => console.log(data));
 // binanceFutures.getOpenOrders().then(data => console.log(data));
 // make get all orders request

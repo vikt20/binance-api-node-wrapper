@@ -93,6 +93,7 @@ export default class BinanceUserData extends BinanceFutures {
             case "FILLED":
             case "REJECTED":
             case "EXPIRED":
+            case "FINISHED":
                 // case "TRIGGERED":
                 this.userData.orders = this.userData.orders.filter(order => order.clientOrderId !== data.clientOrderId);
                 break;

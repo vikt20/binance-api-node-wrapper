@@ -72,7 +72,7 @@ export function convertUserData(rawData: UserDataWebSocket): UserData {
     } else if (e === "ORDER_TRADE_UPDATE") {
         return { event: e, accountData: undefined, orderData: convertOrderDataWebSocket(o as OrderDataWebSocket) };
     } else if (e === "ALGO_UPDATE") {
-        return { event: e, accountData: undefined, orderData: convertAlgoOrderDataWebSocket(o as AlgoOrderDataWebSocket) };
+        return { event: "ORDER_TRADE_UPDATE", accountData: undefined, orderData: convertAlgoOrderDataWebSocket(o as AlgoOrderDataWebSocket) };
     } else {
         return { event: e, accountData: undefined, orderData: undefined };
     }

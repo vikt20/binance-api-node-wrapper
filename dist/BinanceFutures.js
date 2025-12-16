@@ -111,6 +111,74 @@ export default class BinanceFutures extends BinanceStreams {
     async getOpenOrdersBySymbol(params) {
         return await this.getOpenOrders(params.symbol);
     }
+    async getLatestPnlBySymbol(symbol) {
+        // 1. Fetch a larger limit to increase chances of finding the 'Opening' trades
+        // If the position was opened weeks ago, this might still miss the opening trade
+        // unless you implement pagination (fetching more history).
+        const request = await this.signedRequest("futures", "GET", "/fapi/v1/userTrades", {
+            symbol,
+            limit: 100
+        });
+        if (!request.success || request.data?.length === 0)
+            return this.formattedResponse({ errors: 'No trades found' });
+        const trades = request.data;
+        // Sort Newest to Oldest
+        trades.sort((a, b) => b.time - a.time);
+        let totalRealizedPnl = 0;
+        let totalCommission = 0;
+        // Quantity logic variables
+        let qtyClosedToMatch = 0;
+        let foundClosingTrades = false;
+        for (const trade of trades) {
+            const pnl = Number(trade.realizedPnl);
+            const commission = Number(trade.commission);
+            const qty = Number(trade.qty); // Always positive in Binance API
+            // --- Phase 1: Identify Closing Trades ---
+            if (pnl !== 0) {
+                foundClosingTrades = true;
+                // Add PnL (can be positive or negative)
+                totalRealizedPnl += pnl;
+                // Subtract Commission (always positive cost)
+                totalCommission += commission;
+                // Track how much volume we need to find opening fees for
+                qtyClosedToMatch += qty;
+            }
+            // --- Phase 2: Identify Opening Trades ---
+            // We only look at opening trades if we have already found the closing chunk
+            else if (foundClosingTrades && qtyClosedToMatch > 0) {
+                // This is an opening trade (pnl is 0)
+                if (qty >= qtyClosedToMatch) {
+                    // CASE A: This opening trade is bigger or equal to what we closed.
+                    // Example: We closed 5 BTC, this entry was a buy of 10 BTC.
+                    // We only paid fees on the 5 BTC part for this specific cycle.
+                    const ratio = qtyClosedToMatch / qty;
+                    const proRatedCommission = commission * ratio;
+                    totalCommission += proRatedCommission;
+                    // We have matched all quantity. Stop.
+                    qtyClosedToMatch = 0;
+                    break;
+                }
+                else {
+                    // CASE B: This opening trade is smaller than what we closed.
+                    // Example: We closed 5 BTC, this entry was a buy of 2 BTC.
+                    // We take the full commission of this 2 BTC and keep looking for the other 3.
+                    totalCommission += commission;
+                    qtyClosedToMatch -= qty;
+                }
+            }
+            // --- Phase 3: Safety Break ---
+            // If we found closing trades but haven't found the opening trade 
+            // (maybe it was opened too long ago and isn't in the list of 100),
+            // we essentially stop to prevent adding commissions from totally unrelated previous cycles.
+            else if (foundClosingTrades && qtyClosedToMatch <= 0) {
+                break;
+            }
+        }
+        if (!foundClosingTrades)
+            return this.formattedResponse({ errors: 'No closing trades found' });
+        // Final Calculation: Gross PnL - Total Fees (Close Fees + Open Fees)
+        return this.formattedResponse({ data: Number((totalRealizedPnl - totalCommission).toFixed(2)) });
+    }
     async cancelAllOpenOrders(params) {
         const requestReg = this.signedRequest('futures', 'DELETE', '/fapi/v1/allOpenOrders', { symbol: params.symbol });
         const requestAlgo = this.signedRequest('futures', 'DELETE', '/fapi/v1/algoOpenOrders', { symbol: params.symbol });

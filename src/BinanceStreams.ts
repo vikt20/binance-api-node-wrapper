@@ -152,7 +152,7 @@ export type DepthDataWebSocket = {
 };
 
 export type UserData = {
-    event: "ACCOUNT_UPDATE" | "ORDER_TRADE_UPDATE" | "ALGO_UPDATE",
+    event: "ACCOUNT_UPDATE" | "ORDER_TRADE_UPDATE" | "ALGO_UPDATE" | "listenKeyExpired",
     accountData: AccountData | undefined
     orderData: OrderData | undefined
 }
@@ -295,10 +295,10 @@ export default class BinanceStreams extends BinanceBase {
         })
     }
 
-    // keep listen key alive by ping every 60min
+    // keep listen key alive by ping every 30min
     keepAliveListenKeyByInterval = (type: Type) => {
         clearInterval(this.listenKeyInterval)
-        this.listenKeyInterval = setInterval(() => this.keepAliveListenKey(type), 60 * 60 * 1000)
+        this.listenKeyInterval = setInterval(() => this.keepAliveListenKey(type), 30 * 60 * 1000)
     }
 
     //subscribe to spot depth stream

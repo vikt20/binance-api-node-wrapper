@@ -141,7 +141,7 @@ export type DepthDataWebSocket = {
     };
 };
 export type UserData = {
-    event: "ACCOUNT_UPDATE" | "ORDER_TRADE_UPDATE" | "ALGO_UPDATE";
+    event: "ACCOUNT_UPDATE" | "ORDER_TRADE_UPDATE" | "ALGO_UPDATE" | "listenKeyExpired";
     accountData: AccountData | undefined;
     orderData: OrderData | undefined;
 };

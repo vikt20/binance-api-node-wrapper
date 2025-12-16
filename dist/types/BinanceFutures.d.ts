@@ -127,6 +127,7 @@ export interface IBinanceClass {
     }): Promise<FormattedResponse<PositionData>>;
     getOpenOrders(): Promise<FormattedResponse<OrderData[]>>;
     getOpenOrdersBySymbol(params: GetOpenOrdersBySymbolParams): Promise<FormattedResponse<OrderData[]>>;
+    getAggTrades(params: GetAggTradesParams): Promise<FormattedResponse<AggTradesData[]>>;
     cancelAllOpenOrders(params: CancelAllOpenOrdersParams): Promise<FormattedResponse<any>>;
     cancelOrderById(params: CancelOrderByIdParams): Promise<FormattedResponse<any>>;
     trailingStopOrder(params: TrailingStopOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
@@ -139,6 +140,7 @@ export interface IBinanceClass {
     stopMarketOrder(params: StopMarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;
     reducePosition(params: ReducePositionParams): Promise<FormattedResponse<OrderRequestResponse>>;
     customOrder(orderInput: OrderInput): Promise<FormattedResponse<OrderRequestResponse>>;
+    getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
 }
 export default class BinanceFutures extends BinanceStreams implements IBinanceClass {
     constructor(apiKey?: string, apiSecret?: string);
@@ -168,6 +170,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
     }): Promise<FormattedResponse<PositionData>>;
     getOpenOrders(symbol?: string): Promise<FormattedResponse<OrderData[]>>;
     getOpenOrdersBySymbol(params: GetOpenOrdersBySymbolParams): Promise<FormattedResponse<OrderData[]>>;
+    getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
     cancelAllOpenOrders(params: CancelAllOpenOrdersParams): Promise<FormattedResponse<any>>;
     cancelOrderById(params: CancelOrderByIdParams): Promise<FormattedResponse<any>>;
     marketBuy(params: MarketOrderParams): Promise<FormattedResponse<OrderRequestResponse>>;

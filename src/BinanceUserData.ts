@@ -24,7 +24,7 @@ export default class BinanceUserData extends BinanceFutures {
         orders: []
     }
 
-    init() {
+    async init() {
         BinanceUserData.Emitter.on(BinanceUserData.TRIGGER_POSITION_EVENT, this.emitPosition)
         BinanceUserData.Emitter.on(BinanceUserData.TRIGGER_ORDER_EVENT, this.emitOrders)
 
@@ -49,8 +49,11 @@ export default class BinanceUserData extends BinanceFutures {
                 if (data.accountData) data.accountData.positions.forEach(this.setPosition)
                 break;
             case "ORDER_TRADE_UPDATE":
-                console.log(data.orderData)
+                // console.log(data.orderData)
                 if (data.orderData) this.setOrders(data.orderData);
+                break;
+            case "listenKeyExpired":
+                throw new Error("listenKeyExpired");
                 break;
             default:
                 // console.log(`No event found: `, data)
@@ -90,7 +93,7 @@ export default class BinanceUserData extends BinanceFutures {
             case "FILLED":
             case "REJECTED":
             case "EXPIRED":
-            case "TRIGGERED":
+                // case "TRIGGERED":
                 this.userData.orders = this.userData.orders.filter(order => order.clientOrderId !== data.clientOrderId);
                 break;
             case "NEW":

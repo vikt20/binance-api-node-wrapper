@@ -6,10 +6,10 @@ export default class BinanceStreams extends BinanceBase {
     constructor(apiKey, apiSecret) {
         super(apiKey, apiSecret);
         this.subscriptions = [];
-        // keep listen key alive by ping every 60min
+        // keep listen key alive by ping every 30min
         this.keepAliveListenKeyByInterval = (type) => {
             clearInterval(this.listenKeyInterval);
-            this.listenKeyInterval = setInterval(() => this.keepAliveListenKey(type), 60 * 60 * 1000);
+            this.listenKeyInterval = setInterval(() => this.keepAliveListenKey(type), 30 * 60 * 1000);
         };
     }
     closeAllSockets() {

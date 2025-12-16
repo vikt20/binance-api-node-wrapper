@@ -37,4 +37,4 @@ const binanceUserData = new BinanceUserData(BINANCE_APIKEY, BINANCE_APISECRET);
 //cancel by id
 // await binanceFutures.cancelOrderById({ clientOrderId: 'R00c8aAKBm9x0eLakgRotw', symbol: 'BTCUSDT', isAlgoOrder: true }).then(data => console.log(data));
 
-binanceFutures.reduceStopOrder({ symbol: 'LIGHTUSDT', side: 'BUY', price: 0.9, quantity: 6 }).then(data => console.log(data));
+// binanceFutures.reduceStopOrder({ symbol: 'LIGHTUSDT', side: 'BUY', price: 0.9, quantity: 6 }).then(data => console.log(data));

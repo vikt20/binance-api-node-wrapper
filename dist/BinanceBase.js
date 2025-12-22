@@ -4,7 +4,7 @@ import axios from 'axios';
 import * as crypto from 'crypto';
 import { convertObjectIntoUrlEncoded } from './converters.js';
 class BinanceBase {
-    constructor(apiKey, apiSecret) {
+    constructor(apiKey, apiSecret, pingServer = false) {
         this._HTTP_AGENT = new http.Agent({ keepAlive: true, timeout: 3600000 });
         this._HTTPS_AGENT = new https.Agent({ keepAlive: true, timeout: 3600000 });
         this._AXIOS_INSTANCE = axios.create({ httpAgent: this._HTTP_AGENT, httpsAgent: this._HTTPS_AGENT });
@@ -12,12 +12,16 @@ class BinanceBase {
         this.recvWindow = 3000;
         this.apiKey = apiKey || '';
         this.apiSecret = apiSecret || '';
-        this.pingServer();
+        if (pingServer)
+            this.pingServer();
         this.setTimeOffset();
+    }
+    destroy() {
+        clearInterval(this.pingServerInterval);
     }
     pingServer() {
         clearInterval(this.pingServerInterval);
-        this.pingServerInterval = setInterval(() => this._AXIOS_INSTANCE.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/ping`), 30000);
+        this.pingServerInterval = setInterval(() => this._AXIOS_INSTANCE.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/ping`).catch(() => { }), 30000);
     }
     generateSignature(queryString) {
         return crypto.createHmac('sha256', this.apiSecret).update(queryString).digest('hex');
@@ -35,22 +39,22 @@ class BinanceBase {
             this.timeOffset = localTime - serverTime;
         }
         catch (error) {
-            throw new Error(`Failed to set time offset: ${error}`);
+            throw new Error(`Failed to set time offset`);
         }
     }
     async getServerTime() {
         try {
-            const response = await axios.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/time`);
+            const response = await this._AXIOS_INSTANCE.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/time`);
             return response.data.serverTime;
         }
         catch (error) {
-            throw new Error(`Failed to retrieve server time: ${error}`);
+            throw new Error(`Failed to retrieve server time`);
         }
     }
     async publicRequest(type, method, endpoint, params = {}) {
         try {
             const _URL = type === 'futures' ? BinanceBase.FUTURES_BASE_URL : BinanceBase.SPOT_BASE_URL;
-            const response = await axios.request({
+            const response = await this._AXIOS_INSTANCE.request({
                 method: method,
                 url: `${_URL}${endpoint}`,
                 params: params

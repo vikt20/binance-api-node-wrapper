@@ -195,7 +195,7 @@ export type HandleWebSocket = {
 };
 export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG';
 export default class BinanceStreams extends BinanceBase {
-    constructor(apiKey?: string, apiSecret?: string);
+    constructor(apiKey?: string, apiSecret?: string, pingServer?: boolean);
     protected subscriptions: {
         id: string;
         disconnect: Function;
@@ -204,14 +204,13 @@ export default class BinanceStreams extends BinanceBase {
     closeAllSockets(): void;
     closeById(id: string): void;
     /**
-     * @param webSocket
+     * @param createWs - function to create webSocket connection
      * @param parser - convertation function
      * @param callback - function to handle data
-     * @param reconnect
      * @param title
      * @returns object with webSocket, id and setIsKeepAlive function
      */
-    handleWebSocket(webSocket: ws, parser: Function, callback: Function, reconnect: Function, title: string, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
+    handleWebSocket(createWs: () => ws, parser: Function, callback: Function, title: string, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     keepAliveListenKeyByInterval: (type: Type) => void;
     spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;
     futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket>;

@@ -1,8 +1,8 @@
 import BinanceStreams from './BinanceStreams.js';
 import { convertPositionDataByRequest, convertOrderDataRequestResponse, convertKlinesDataByRequest, convertAggTradesDataByRequest, convertAlgoOrderByRequest } from './converters.js';
 export default class BinanceFutures extends BinanceStreams {
-    constructor(apiKey, apiSecret) {
-        super(apiKey, apiSecret);
+    constructor(apiKey, apiSecret, pingServer = false) {
+        super(apiKey, apiSecret, pingServer);
     }
     async closeListenKey() {
         return await this.signedRequest('futures', 'DELETE', '/fapi/v1/listenKey');
@@ -302,7 +302,7 @@ export default class BinanceFutures extends BinanceStreams {
             type: 'TRAILING_STOP_MARKET',
             quantity: params.quantity,
             callbackRate: params.callbackRate,
-            activationPrice: params.activationPrice,
+            activatePrice: params.activatePrice,
             reduceOnly: true
         });
     }
@@ -312,7 +312,7 @@ export default class BinanceFutures extends BinanceStreams {
         timeInForce = undefined, stopPrice = undefined, //used with STOP_MARKET or TAKE_PROFIT_MARKET
         closePosition = false, //used with STOP_MARKET or TAKE_PROFIT_MARKET
         reduceOnly = undefined, workingType = 'CONTRACT_PRICE', callbackRate = undefined, //used with trailing
-        activationPrice = undefined, //used with trailing
+        activatePrice = undefined, //used with trailing
         algoType = undefined //used with trailing
          } = orderInput;
         const timestamp = Date.now();
@@ -332,7 +332,7 @@ export default class BinanceFutures extends BinanceStreams {
             recWindow: this.recvWindow,
             newOrderResponseType: 'RESULT',
             callbackRate,
-            activationPrice,
+            activatePrice,
             algoType
         };
         Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);

@@ -30,7 +30,7 @@ type OrderInput = {
     reduceOnly?: boolean;
     workingType?: OrderWorkingType;
     callbackRate?: number;
-    activationPrice?: number;
+    activatePrice?: number;
     algoType?: 'CONDITIONAL';
 }
 
@@ -159,8 +159,8 @@ export interface IBinanceClass {
 }
 
 export default class BinanceFutures extends BinanceStreams implements IBinanceClass {
-    constructor(apiKey?: string, apiSecret?: string) {
-        super(apiKey, apiSecret);
+    constructor(apiKey?: string, apiSecret?: string, pingServer: boolean = false) {
+        super(apiKey, apiSecret, pingServer);
     }
 
 
@@ -474,7 +474,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
             type: 'TRAILING_STOP_MARKET',
             quantity: params.quantity,
             callbackRate: params.callbackRate,
-            activationPrice: params.activationPrice,
+            activatePrice: params.activatePrice,
             reduceOnly: true
         })
     }
@@ -495,7 +495,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
             reduceOnly = undefined,
             workingType = 'CONTRACT_PRICE',
             callbackRate = undefined, //used with trailing
-            activationPrice = undefined, //used with trailing
+            activatePrice = undefined, //used with trailing
             algoType = undefined //used with trailing
         } = orderInput
 
@@ -516,7 +516,7 @@ export default class BinanceFutures extends BinanceStreams implements IBinanceCl
             recWindow: this.recvWindow,
             newOrderResponseType: 'RESULT',
             callbackRate,
-            activationPrice,
+            activatePrice,
             algoType
         }
         Object.keys(params).forEach(key => params[key] === undefined && delete params[key])

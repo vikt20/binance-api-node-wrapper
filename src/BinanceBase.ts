@@ -152,42 +152,6 @@ export type OrderRequestResponse = {
     updateTime: number
 }
 
-/**
- * Response Example
-
-{
-   "algoId": 2146760,
-   "clientAlgoId": "6B2I9XVcJpCjqPAJ4YoFX7",
-   "algoType": "CONDITIONAL",
-   "orderType": "TAKE_PROFIT",
-   "symbol": "BNBUSDT",
-   "side": "SELL",
-   "positionSide": "BOTH",
-   "timeInForce": "GTC",
-   "quantity": "0.01",
-   "algoStatus": "CANCELED",
-   "actualOrderId": "",
-   "actualPrice": "0.00000",
-   "triggerPrice": "750.000",
-   "price": "750.000",
-   "icebergQuantity": null,
-   "tpTriggerPrice": "0.000",
-   "tpPrice": "0.000",
-   "slTriggerPrice": "0.000",
-   "slPrice": "0.000",
-   "tpOrderType": "",
-   "selfTradePreventionMode": "EXPIRE_MAKER",
-   "workingType": "CONTRACT_PRICE",
-   "priceMatch": "NONE",
-   "closePosition": false,
-   "priceProtect": false,
-   "reduceOnly": false,
-   "createTime": 1750485492076,
-   "updateTime": 1750514545091,
-   "triggerTime": 0,
-   "goodTillDate": 0
-}
- */
 export type AlgoOrderResponse = {
     algoId: number,
     clientAlgoId: string,
@@ -264,7 +228,7 @@ export type TrailingStopOrderParams = {
     side: OrderSide,
     quantity: number,
     callbackRate: number,
-    activationPrice?: number,
+    activatePrice?: number,
     // reduceOnly: boolean
 }
 export type LimitOrderParams = {
@@ -325,16 +289,20 @@ export default class BinanceBase {
     protected timeOffset: number = 0;
     protected recvWindow: number = 3000;
 
-    constructor(apiKey?: string, apiSecret?: string) {
+    constructor(apiKey?: string, apiSecret?: string, pingServer: boolean = false) {
         this.apiKey = apiKey || '';
         this.apiSecret = apiSecret || '';
-        this.pingServer();
+        if (pingServer) this.pingServer();
         this.setTimeOffset()
+    }
+
+    public destroy() {
+        clearInterval(this.pingServerInterval);
     }
 
     private pingServer() {
         clearInterval(this.pingServerInterval);
-        this.pingServerInterval = setInterval(() => this._AXIOS_INSTANCE.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/ping`), 30000)
+        this.pingServerInterval = setInterval(() => this._AXIOS_INSTANCE.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/ping`).catch(() => { }), 30000)
     }
     private generateSignature(queryString: string): string {
         return crypto.createHmac('sha256', this.apiSecret).update(queryString).digest('hex');
@@ -354,16 +322,16 @@ export default class BinanceBase {
             const localTime: number = Date.now();
             this.timeOffset = localTime - serverTime;
         } catch (error) {
-            throw new Error(`Failed to set time offset: ${error}`);
+            throw new Error(`Failed to set time offset`);
         }
     }
 
     async getServerTime(): Promise<number> {
         try {
-            const response: AxiosResponse<any> = await axios.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/time`);
-            return response.data.serverTime;
+            const response: AxiosResponse<any> = await this._AXIOS_INSTANCE.get(`${BinanceBase.FUTURES_BASE_URL}/fapi/v1/time`);
+            return response.data!.serverTime;
         } catch (error) {
-            throw new Error(`Failed to retrieve server time: ${error}`);
+            throw new Error(`Failed to retrieve server time`);
         }
     }
 
@@ -371,7 +339,7 @@ export default class BinanceBase {
     async publicRequest(type: Type, method: string, endpoint: string, params: any = {}): Promise<FormattedResponse<any>> {
         try {
             const _URL = type === 'futures' ? BinanceBase.FUTURES_BASE_URL : BinanceBase.SPOT_BASE_URL;
-            const response: AxiosResponse<any> = await axios.request({
+            const response: AxiosResponse<any> = await this._AXIOS_INSTANCE.request({
                 method: method,
                 url: `${_URL}${endpoint}`,
                 params: params

@@ -214,8 +214,8 @@ export type SocketStatus = 'OPEN' | 'CLOSE' | 'ERROR' | 'PING' | 'PONG'
 
 
 export default class BinanceStreams extends BinanceBase {
-    constructor(apiKey?: string, apiSecret?: string) {
-        super(apiKey, apiSecret)
+    constructor(apiKey?: string, apiSecret?: string, pingServer: boolean = false) {
+        super(apiKey, apiSecret, pingServer)
     }
 
     protected subscriptions: { id: string, disconnect: Function }[] = [];
@@ -225,6 +225,8 @@ export default class BinanceStreams extends BinanceBase {
         this.subscriptions.forEach(i => i.disconnect());
         this.subscriptions = [];
         clearInterval(this.listenKeyInterval)
+        this.destroy(); // stop ping server or other Base class functions
+
         // console.log(`WebSocket subscriptions:`, this.subscriptions);
     }
     closeById(id: string) {
@@ -236,62 +238,114 @@ export default class BinanceStreams extends BinanceBase {
     }
 
     /**
-     * @param webSocket
+     * @param createWs - function to create webSocket connection
      * @param parser - convertation function
      * @param callback - function to handle data
-     * @param reconnect
      * @param title
      * @returns object with webSocket, id and setIsKeepAlive function
      */
-    handleWebSocket(webSocket: ws, parser: Function, callback: Function, reconnect: Function, title: string, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
+    handleWebSocket(createWs: () => ws, parser: Function, callback: Function, title: string, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
+        const MAX_RECONNECT_ATTEMPTS = 5;
+        const RECONNECT_DELAY = 1000;
+        let reconnectAttempts = 0;
         //generate random ID
         const id = Math.random().toString(36).substring(7);
 
         let isKeepAlive = true
+        let currentWs: ws;
+        let resolved = false;
 
         const disconnect = () => {
             isKeepAlive = false;
-            webSocket.close()
+            if (currentWs) {
+                currentWs.terminate(); // Immediate, no close handshake → avoids code 1000 confusion
+            }
+
+            // Clean up subscription
+            const index = this.subscriptions.findIndex(s => s.id === id);
+            if (index > -1) {
+                this.subscriptions.splice(index, 1);
+            }
         }
 
         this.subscriptions.push({ id, disconnect });
 
         return new Promise((resolve, reject) => {
-            //onmessage
-            webSocket.on('message', (data: any) => {
-                callback(parser(JSON.parse(data)));
-            });
-            //onping
-            webSocket.on('ping', (data: any) => {
-                // console.log(`${title} - PING RECEIVED`);
-                webSocket.pong(data);
-            });
-            webSocket.on('pong', (data: any) => {
-                // console.log(`${title} - PONG RECEIVED`);
-                if (statusCallback) statusCallback('PONG');
-            });
-            //onclose
-            webSocket.on('close', () => {
-                // console.log(`${title} - CLOSED`);
-                if (statusCallback) statusCallback('CLOSE');
-                if (isKeepAlive) reconnect();
-            });
-            //onopen
-            webSocket.on('open', () => {
-                // console.log(`${title} - OPEN`);
-                if (statusCallback) statusCallback('OPEN');
-                resolve({ disconnect, id })
-            });
-            //onerror
-            webSocket.on('error', (error: string) => {
-                if (statusCallback) statusCallback('ERROR');
-                // console.log(`${title} - ERROR: `, error);
-                isKeepAlive = false;
+            const connect = () => {
+                if (!isKeepAlive) return;
+                try {
+                    currentWs = createWs();
+                } catch (e) {
+                    reconnectAttempts++;
+                    if (reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
+                        reject(e);
+                        return;
+                    }
+                    setTimeout(connect, RECONNECT_DELAY);
+                    return;
+                }
 
-                // throw new Error(`${title} - ERROR: ${error}`);
-                reject(error);
+                // Clean up any lingering listeners (safety)
+                currentWs.removeAllListeners();
 
-            });
+                //onmessage
+                currentWs.on('message', (data: any) => {
+                    callback(parser(JSON.parse(data)));
+                });
+                //onping
+                currentWs.on('ping', (data: any) => {
+                    // console.log(`${title} - PING RECEIVED`);
+                    currentWs.pong(data);
+                });
+                currentWs.on('pong', (data: any) => {
+                    // console.log(`${title} - PONG RECEIVED`);
+                    if (statusCallback) statusCallback('PONG');
+                });
+                //onclose
+                currentWs.on('close', (code: number) => {
+                    // Do not reconnect on manual disconnect or clean close
+                    if (!isKeepAlive || code === 1000) {
+                        return;
+                    }
+
+                    reconnectAttempts++;
+
+                    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                        console.warn(`${title} - Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Giving up.`);
+
+                        // Only reject if we never successfully connected initially
+                        if (!resolved) {
+                            resolved = true;
+                            reject(new Error('Max reconnection attempts reached'));
+                        }
+                        return;
+                    }
+
+                    // Exponential backoff (highly recommended)
+                    const delay = 1000 * Math.pow(2, reconnectAttempts - 1); // 1s, 2s, 4s, 8s...
+                    console.log(`${title} - Connection lost. Reconnecting in ${delay}ms (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+
+                    setTimeout(connect, delay);
+                });
+                //onopen
+                currentWs.on('open', () => {
+                    reconnectAttempts = 0; // Reset counter on successful (re)connection
+                    if (statusCallback) statusCallback('OPEN');
+
+                    if (!resolved) {
+                        resolved = true;
+                        resolve({ disconnect, id });
+                    }
+                });
+                //onerror
+                currentWs.on('error', (error: any) => {
+                    if (statusCallback) statusCallback('ERROR');
+                    // console.log(`${title} - ERROR: `, error);
+                    reject(error);
+                });
+            }
+
+            connect();
         })
     }
 
@@ -304,67 +358,59 @@ export default class BinanceStreams extends BinanceBase {
     //subscribe to spot depth stream
     spotDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
-        const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
-        const reconnect = () => this.spotDepthStream(symbols, callback);
+        const createWs = () => new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
 
-        return this.handleWebSocket(webSocket, convertDepthData, callback, reconnect, 'spotDepthStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertDepthData, callback, 'spotDepthStream()', statusCallback);
     }
 
     //subscribe to futures depth stream
     futuresDepthStream(symbols: string[], callback: (data: DepthData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@depth@100ms`);
-        const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
-        const reconnect = () => this.futuresDepthStream(symbols, callback);
+        const createWs = () => new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
 
-        return this.handleWebSocket(webSocket, convertDepthData, callback, reconnect, 'futuresDepthStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertDepthData, callback, 'futuresDepthStream()', statusCallback);
     }
 
     spotCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@kline_${interval}`);
-        const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
-        const reconnect = () => this.spotCandleStickStream(symbols, interval, callback);
+        const createWs = () => new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
 
-        return this.handleWebSocket(webSocket, convertKlineData, callback, reconnect, 'spotCandleStickStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertKlineData, callback, 'spotCandleStickStream()', statusCallback);
     }
 
     futuresCandleStickStream(symbols: string[], interval: string, callback: (data: KlineData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@kline_${interval}`);
-        const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
-        const reconnect = () => this.futuresCandleStickStream(symbols, interval, callback);
+        const createWs = () => new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
 
-        return this.handleWebSocket(webSocket, convertKlineData, callback, reconnect, 'futuresCanldeStickStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertKlineData, callback, 'futuresCanldeStickStream()', statusCallback);
     }
 
     futuresBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@bookTicker`);
-        const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
-        const reconnect = () => this.futuresBookTickerStream(symbols, callback);
+        const createWs = () => new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
 
-        return this.handleWebSocket(webSocket, convertBookTickerData, callback, reconnect, 'futuresBookTicketStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertBookTickerData, callback, 'futuresBookTicketStream()', statusCallback);
     }
 
     spotBookTickerStream(symbols: string[], callback: (data: BookTickerData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@bookTicker`);
-        const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
-        const reconnect = () => this.spotBookTickerStream(symbols, callback);
+        const createWs = () => new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
 
-        return this.handleWebSocket(webSocket, convertBookTickerData, callback, reconnect, 'spotBookTicketStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertBookTickerData, callback, 'spotBookTicketStream()', statusCallback);
     }
 
     async futuresTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@aggTrade`);
-        const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
-        const reconnect = () => this.futuresTradeStream(symbols, callback, statusCallback);
+        const createWs = () => new ws(BinanceBase.FUTURES_STREAM_URL_COMBINED + streams.join('/'));
 
-        return this.handleWebSocket(webSocket, convertTradeDataWebSocket, callback, reconnect, 'futuresTradeStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertTradeDataWebSocket, callback, 'futuresTradeStream()', statusCallback);
     }
 
     async spotTradeStream(symbols: string[], callback: (data: TradeData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
         const streams = symbols.map(symbol => `${symbol.toLowerCase()}@aggTrade`);
-        const webSocket = new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
-        const reconnect = () => this.spotTradeStream(symbols, callback, statusCallback);
+        const createWs = () => new ws(BinanceBase.SPOT_STREAM_URL_COMBINED + streams.join('/'));
 
-        return this.handleWebSocket(webSocket, convertTradeDataWebSocket, callback, reconnect, 'spotTradeStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertTradeDataWebSocket, callback, 'spotTradeStream()', statusCallback);
     }
 
     async futuresUserDataStream(callback: (data: UserData) => void, statusCallback?: (status: SocketStatus) => void): Promise<HandleWebSocket> {
@@ -374,13 +420,12 @@ export default class BinanceStreams extends BinanceBase {
             return Promise.reject()
         }
 
-        // send ping every 60min to keep listenKey alive
+        // send ping every 30min to keep listenKey alive
         this.keepAliveListenKeyByInterval('futures')
 
-        const webSocket = new ws(BinanceBase.FUTURES_STREAM_URL + listenKey.data.listenKey);
-        const reconnect = () => this.futuresUserDataStream(callback, statusCallback);
+        const createWs = () => new ws(BinanceBase.FUTURES_STREAM_URL + listenKey.data!.listenKey);
 
-        return this.handleWebSocket(webSocket, convertUserData, callback, reconnect, 'futuresUserDataStream()', statusCallback);
+        return this.handleWebSocket(createWs, convertUserData, callback, 'futuresUserDataStream()', statusCallback);
     }
 
 

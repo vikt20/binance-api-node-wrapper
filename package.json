@@ -1,6 +1,6 @@
 {
   "name": "binance-api-node-wrapper",
-  "version": "1.3.8",
+  "version": "1.4.0",
   "description": "wrapper for binance api",
   "main": "index.js",
   "type": "module",

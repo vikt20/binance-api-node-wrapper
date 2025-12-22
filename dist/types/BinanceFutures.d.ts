@@ -13,7 +13,7 @@ type OrderInput = {
     reduceOnly?: boolean;
     workingType?: OrderWorkingType;
     callbackRate?: number;
-    activationPrice?: number;
+    activatePrice?: number;
     algoType?: 'CONDITIONAL';
 };
 export type OrderRequestResponse = {
@@ -143,7 +143,7 @@ export interface IBinanceClass {
     getLatestPnlBySymbol(symbol: string): Promise<FormattedResponse<number>>;
 }
 export default class BinanceFutures extends BinanceStreams implements IBinanceClass {
-    constructor(apiKey?: string, apiSecret?: string);
+    constructor(apiKey?: string, apiSecret?: string, pingServer?: boolean);
     closeListenKey(): Promise<FormattedResponse<any>>;
     getExchangeInfo(): Promise<FormattedResponse<ExchangeInfo>>;
     getStaticDepth(params: GetStaticDepthParams): Promise<FormattedResponse<StaticDepth>>;

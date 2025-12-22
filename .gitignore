@@ -1,4 +1,4 @@
 node_modules
 .npmrc
-/dist/test.js
-/src/test.ts
+dist/
+src/test.ts
